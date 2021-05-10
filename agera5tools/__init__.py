@@ -7,4 +7,9 @@
 import os
 os.environ["CMD_MODE"] = "0"
 
-__version__ = "0.9.0"
+from .dump_grid import dump_grid
+from .dump_clip import dump, clip
+from .extract_point import extract_point
+
+
+__version__ = "1.0.0"
