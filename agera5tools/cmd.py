@@ -69,7 +69,7 @@ def cmd_dump(agera5_path, day, output=None, bbox=None, tocelsius=False, add_grid
     day = check_date(day)
     output = Path(output) if output is not None else None
     bbox = BoundingBox() if bbox is None else BoundingBox(*bbox)
-    df = dump(agera5_path, day, tocelsius, add_gridid, bbox)
+    df = dump(agera5_path, day, bbox, tocelsius, add_gridid)
     if output is not None:
         output = Path(output)
     write_dataframe(df, output)

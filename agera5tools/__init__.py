@@ -12,4 +12,4 @@ from .dump_clip import dump, clip
 from .extract_point import extract_point
 
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
