@@ -9,7 +9,7 @@ from .util import create_agera5_fnames, convert_to_celsius, add_grid
 CMD_MODE = True if os.environ["CMD_MODE"] == "1" else False
 
 
-def dump(agera5_dir, day, bbox, tocelsius=True, add_gridid=False):
+def dump(agera5_dir, day, bbox, tocelsius=False, add_gridid=False):
     """Converts the data for all AgERA5 variables for given day to a pandas dataframe.
 
     :param agera5_dir: the location of the AgERA5 dataset
