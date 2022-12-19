@@ -4,18 +4,21 @@ import xarray as xr
 
 
 def dump_grid():
-    """Exports the AgeRA5 grid that is embedded in the agera5tools packages
+    """Exports the AgERA5 grid that is embedded in the agera5tools packages
 
     :return: a dataframe with the grid definition
     """
     agera5_grid = Path(__file__).parent / "grid_elevation_landfraction.nc"
     ds = xr.open_dataset(agera5_grid)
     df = ds.to_dataframe()
+    # remove line with missing grid values
     df = df[df.idgrid_era5 != -999]
     df.reset_index(inplace=True)
-    df["lat_centre"] = df.lat + 0.05
-    df["lon_centre"] = df.lon + 0.05
-    ix = df.land_fraction == 0
-    df.loc[ix, "elevation"] = 0.
+    # compute grid centre instead of lower left
+    df["latitude"] = df.lat + 0.05
+    df["longitude"] = df.lon + 0.05
+    # Only keep grids with land areas
+    ix = df.land_fraction > 0
+    df = df[ix]
 
     return df

@@ -12,6 +12,7 @@ from .util import BoundingBox, check_date, check_date_range, write_dataframe, Po
 from .extract_point import extract_point
 from .dump_clip import dump, clip
 from .dump_grid import dump_grid
+from .init import init
 
 @click.group()
 def cli():
@@ -113,11 +114,25 @@ def cmd_dump_grid(output=None):
     write_dataframe(df, output)
 
 
+@click.command("init")
+def cmd_init():
+    """Initializes AgERA5tools
+    """
+    try:
+        agera5toolsrc = init()
+        print(f"AgERA5tools succesfully initialized!.")
+        print(f"Config file located at: {agera5toolsrc}")
+    except RuntimeError as e:
+        print(f"AgERA5tools failed to initialize: {e}")
+    except KeyboardInterrupt:
+        print("Exiting...")
+
+
 cli.add_command(cmd_extract_point)
 cli.add_command(cmd_dump)
 cli.add_command(cmd_clip)
 cli.add_command(cmd_dump_grid)
-
+cli.add_command(cmd_init)
 
 if __name__ == "__main__":
     cli()

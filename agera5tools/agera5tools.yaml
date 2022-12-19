@@ -1,0 +1,58 @@
+version: 0.1
+logging:
+  log_path: /data/wit015/agera5/logs
+  log_fname: agera5tools.log
+  log_level_console: WARNING
+  log_level_file: INFO
+region:
+  name: "Bangladesh"
+  boundingbox:
+    lon_min: 87
+    lat_min: 20.5
+    lon_max: 93
+    lat_max: 27
+temporal_range:
+  start_year: 2022
+  end_year: 2099
+misc:
+  reference_point:
+    lon: 90.00
+    lat: 23.97
+  grid_search_radius: 0.2
+cdsapi:
+  url: https://cds.climate.copernicus.eu/api/v2
+  key: 33724dbc-8b17-414c-aaa0-49754f46720f
+  uid: 62582
+  verify: 1
+database:
+  dsn: sqlite:////data/wit015/agera5/agera5.db
+  agera5_table_name: weather_grid_agera5
+  grid_table_name: grid_agera5
+data_storage:
+  netcdf_path: /data/wit015/agera5/ncfiles/
+  keep_netcdf: yes
+  tmp_path: /data/wit015/agera5/tmp
+  csv_path: /data/wit015/agera5/csv
+variables:
+  Temperature_Air_2m_Mean_24h: yes
+  Temperature_Air_2m_Mean_Day_Time: no
+  Temperature_Air_2m_Mean_Night_Time: no
+  Dew_Point_Temperature_2m_Mean: no
+  Temperature_Air_2m_Max_24h: no
+  Temperature_Air_2m_Min_24h: no
+  Temperature_Air_2m_Max_Day_Time: yes
+  Temperature_Air_2m_Min_Night_Time: yes
+  Cloud_Cover_Mean: no
+  Snow_Thickness_LWE_Mean: no
+  Snow_Thickness_Mean: no
+  Vapour_Pressure_Mean: yes
+  Precipitation_Flux: yes
+  Solar_Radiation_Flux: yes
+  Wind_Speed_10m_Mean: yes
+  Relative_Humidity_2m_06h: no
+  Relative_Humidity_2m_09h: no
+  Relative_Humidity_2m_12h: no
+  Relative_Humidity_2m_15h: no
+  Relative_Humidity_2m_18h: no
+  Precipitation_Rain_Duration_Fraction: no
+  Precipitation_Solid_Duration_Fraction: no

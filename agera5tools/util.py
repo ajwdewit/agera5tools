@@ -1,38 +1,45 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) May 2021, Wageningen Environmental Research
 # Allard de Wit (allard.dewit@wur.nl)
+import logging
 from pathlib import Path
 import sys, os
 import datetime as dt
 import sqlite3
+import calendar
 
+import pandas as pd
+from numpy import arccos, cos, radians, sin
+
+import yaml
 import xarray as xr
 import click
 
 CMD_MODE = True if os.environ["CMD_MODE"] == "1" else False
 
-variable_names = ['Temperature_Air_2m_Mean_24h',
-                  'Temperature_Air_2m_Mean_Day_Time',
-                  'Temperature_Air_2m_Mean_Night_Time',
-                  'Dew_Point_Temperature_2m_Mean',
-                  'Temperature_Air_2m_Max_24h',
-                  'Temperature_Air_2m_Min_24h',
-                  'Temperature_Air_2m_Max_Day_Time',
-                  'Temperature_Air_2m_Min_Night_Time',
-                  'Cloud_Cover_Mean',
-                  'Snow_Thickness_LWE_Mean',
-                  'Snow_Thickness_Mean',
-                  'Vapour_Pressure_Mean',
-                  'Precipitation_Flux',
-                  'Solar_Radiation_Flux',
-                  'Wind_Speed_10m_Mean',
-                  'Relative_Humidity_2m_06h',
-                  'Relative_Humidity_2m_09h',
-                  'Relative_Humidity_2m_12h',
-                  'Relative_Humidity_2m_15h',
-                  'Relative_Humidity_2m_18h',
-                  'Precipitation_Rain_Duration_Fraction',
-                  'Precipitation_Solid_Duration_Fraction']
+variable_names = {'Temperature_Air_2m_Mean_24h': dict(variable="2m_temperature", statistic ="24_hour_mean"),
+                  'Temperature_Air_2m_Mean_Day_Time': dict(variable="2m_temperature", statistic ="day_time_mean"),
+                  'Temperature_Air_2m_Mean_Night_Time': dict(variable="2m_temperature", statistic ="night_time_mean"),
+                  'Dew_Point_Temperature_2m_Mean': dict(variable="2m_dewpoint_temperature", statistic ="24_hour_mean"),
+                  'Temperature_Air_2m_Max_24h': dict(variable="2m_temperature", statistic ="24_hour_maximum"),
+                  'Temperature_Air_2m_Min_24h': dict(variable="2m_temperature", statistic ="24_hour_minimum"),
+                  'Temperature_Air_2m_Max_Day_Time': dict(variable="2m_temperature", statistic ="day_time_maximum"),
+                  'Temperature_Air_2m_Min_Night_Time': dict(variable="2m_temperature", statistic ="night_time_minimum"),
+                  'Cloud_Cover_Mean': dict(variable="cloud_cover", statistic ="24_hour_mean"),
+                  'Snow_Thickness_LWE_Mean': dict(variable="snow_thickness_lwe", statistic ="24_hour_mean"),
+                  'Snow_Thickness_Mean': dict(variable="snow_thickness", statistic ="24_hour_mean"),
+                  'Vapour_Pressure_Mean': dict(variable="vapour_pressure", statistic ="24_hour_mean"),
+                  'Precipitation_Flux': dict(variable="precipitation_flux"),
+                  'Solar_Radiation_Flux': dict(variable="solar_radiation_flux"),
+                  'Wind_Speed_10m_Mean': dict(variable="10m_wind_speed", statistic="24_hour_mean"),
+                  'Relative_Humidity_2m_06h': dict(variable="2m_relative_humidity", time="06_00"),
+                  'Relative_Humidity_2m_09h': dict(variable="2m_relative_humidity", time="09_00"),
+                  'Relative_Humidity_2m_12h': dict(variable="2m_relative_humidity", time="12_00"),
+                  'Relative_Humidity_2m_15h': dict(variable="2m_relative_humidity", time="15_00"),
+                  'Relative_Humidity_2m_18h': dict(variable="2m_relative_humidity", time="18_00"),
+                  'Precipitation_Rain_Duration_Fraction': dict(variable="solid_precipitation_duration_fraction"),
+                  'Precipitation_Solid_Duration_Fraction': dict(variable="liquid_precipitation_duration_fraction")
+                  }
 
 
 def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final", v="1.0"):
@@ -94,6 +101,8 @@ class BoundingBox:
         self.lat_min = lat_min
         self.lat_max = lat_max
 
+    def get_cds_bbox(self):
+        return [self.lat_max, self.lon_min, self.lat_min, self.lon_max]
 
 class Point:
     """Defines a point with a given longitude/latitude
@@ -188,8 +197,46 @@ def add_grid(ds):
     agera5_grid = Path(__file__).parent / "grid_elevation_landfraction.nc"
     ds_grid = xr.open_dataset(agera5_grid)
 
-    ds["grid_agera5"] = ds_grid.idgrid_era5
+    ds["idgrid"] = ds_grid.idgrid_era5
 
     return ds
 
 
+def days_in_month(year, month):
+
+    if month in (1, 3, 5, 7, 8, 10, 12):
+        return 31
+    if month == 2:
+        if calendar.isleap(year):
+            return 29
+        else:
+            return 28
+    return 30
+
+
+def get_grid(engine, lon, lat, search_radius):
+    sql = f""" 
+    SELECT idgrid, longitude, latitude
+    FROM grid_agera5
+    WHERE latitude < {lat + search_radius} AND latitude > {lat - search_radius} AND 
+        longitude < {lon + search_radius} AND longitude > {lon - search_radius} 
+    """
+    df = pd.read_sql_query(sql, engine)
+    if len(df) > 0:
+        tiny = 0.001
+        df["dist"] = (6371 * arccos(cos(radians(lat + tiny)) * cos(radians(df.latitude.values)) *
+                             cos(radians(df.longitude.values) - radians(lon + tiny)) +
+                             sin(radians(lat + tiny)) * sin(radians(df.latitude.values))))
+        return int(df.idgrid[df.dist.argmin()])
+    else:
+        return None
+
+
+def last_day_in_month(year, month):
+    """Returns the last day in the month
+    :return: a date object containing the last day in the month
+    """
+    if month == 12:
+        return dt.date(year, 12, 31)
+    else:
+        return dt.date(year, month+1, 1) - dt.timedelta(days=-1)
