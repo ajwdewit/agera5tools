@@ -1,25 +1,17 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) December 2022, Wageningen Environmental Research
 # Allard de Wit (allard.dewit@wur.nl)
-
-# This will be set to True only for commandline mode. Not when importing
-# agera5tools in python.
 import logging
-import shutil
 from uuid import uuid4
 import datetime as dt
-from zipfile import ZipFile
 import concurrent.futures
 import copy
-import time
-from pathlib import Path
 
 import cdsapi
 import sqlalchemy as sa
-import xarray as xr
 
-from .util import days_in_month, variable_names, create_target_fname, last_day_in_month, add_grid, get_grid
-from .build import unpack_cds_download
+from .util import variable_names, get_grid
+from .build import unpack_cds_download, convert_ncfiles_to_dataframe, df_to_csv, df_to_database
 from . import config
 
 
@@ -96,7 +88,7 @@ def download_one_day(input):
     return dict(day=day, varname=agera5_variable_name, download_fname=download_fname)
 
 
-def mirror(to_database=True, to_csv=False):
+def mirror(to_database=True, to_csv=True):
     """mirrors the AgERA5tools database.
 
     This procedure will mirror the AgERA5 data at the Copernicus Climate Datastore. It will
@@ -109,12 +101,13 @@ def mirror(to_database=True, to_csv=False):
     """
     logger = logging.getLogger(__name__)
     days = find_days_to_update()
-    for day in days:
+    for day in sorted(days):
         logger.info(f"Starting AgERA5 download for {day}")
         to_download = []
         for varname, selected in config.variables.items():
             if selected:
                 to_download.append((varname, day))
+
         logger.info(f"Starting concurrent CDS download of {len(to_download)} AgERA5 variables.")
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(to_download)) as executor:
             downloaded_sets = executor.map(download_one_day, to_download)
@@ -126,12 +119,11 @@ def mirror(to_database=True, to_csv=False):
 
         df = convert_ncfiles_to_dataframe(downloaded_ncfiles)
         if to_database:
-            df_to_database(df, year, month)
+            df_to_database(df, descriptor=day)
         if to_csv:
-            df_to_csv(df, year, month)
+            df_to_csv(df, descriptor=day)
 
-
-
+    return days
 
 if __name__ == "__main__":
-    main()
+    mirror()

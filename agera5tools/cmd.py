@@ -13,6 +13,12 @@ from .extract_point import extract_point
 from .dump_clip import dump, clip
 from .dump_grid import dump_grid
 from .init import init
+from .build import build
+from .mirror import mirror
+from .check import check
+from . import config
+
+selected_variables = [varname for varname, selected in config.variables.items() if selected]
 
 @click.group()
 def cli():
@@ -20,7 +26,6 @@ def cli():
 
 
 @click.command("extract_point")
-@click.argument("agera5_path",type=click.Path(exists=True))
 @click.argument("longitude",type=click.FLOAT)
 @click.argument("latitude",type=click.FLOAT)
 @click.argument("startdate")
@@ -119,13 +124,58 @@ def cmd_init():
     """Initializes AgERA5tools
     """
     try:
-        agera5toolsrc = init()
-        print(f"AgERA5tools succesfully initialized!.")
-        print(f"Config file located at: {agera5toolsrc}")
+        init()
+        print(f"AgERA5tools successfully initialized!.")
     except RuntimeError as e:
         print(f"AgERA5tools failed to initialize: {e}")
     except KeyboardInterrupt:
         print("Exiting...")
+
+
+@click.command("build")
+@click.option("-d", "--to_database", is_flag=True, flag_value=True,
+              help="Load AgERA5 data into the database")
+@click.option("-c", "--to_csv", is_flag=True, flag_value=True,
+              help="Write AgERA5 data to compressed CSV files.")
+def cmd_build(to_database, to_csv):
+    """Builds the AgERA5 database by bulk download from CDS
+    """
+    print(f"db: {to_database}")
+    print(f"csv: {to_csv}")
+    if to_csv is False and to_database is False:
+        msg = ("Warning: Only NetCDF files will be updated, no tabular output will be written, "
+               "use either --to_database or --to_csv")
+        click.echo(msg)
+
+    build(to_database, to_csv)
+    msg = "Done building database, use the `mirror` command to keep the DB up to date"
+    click.echo(msg)
+
+
+@click.command("mirror")
+@click.option("-c", "--to_csv", is_flag=True,
+              help="Write AgERA5 data to compressed CSV files.")
+def cmd_mirror(to_database=False, to_csv=False):
+    """Incrementally updates the AgERA5 database by daily downloads from the CDS
+    """
+    days = mirror(to_database, to_csv)
+    if not days:
+        click.echo("Found no days to update the AgERA5 database for")
+    else:
+        click.echo(f"Updated the AgERA5 database with the following days: {days}")
+
+
+@click.command("check")
+def cmd_check():
+    """Checks the completeness of NetCDF files from which the database is built
+    """
+    missing = check()
+    if not missing:
+        click.echo(f"Found no missing NetCDF files under {config.data_storage.netcdf_path}")
+    else:
+        click.echo(f"Found {len(missing)} missing NetCDF files under {config.data_storage.netcdf_path}:")
+        for f in missing:
+            click.echo(f" - {f}")
 
 
 cli.add_command(cmd_extract_point)
@@ -133,6 +183,9 @@ cli.add_command(cmd_dump)
 cli.add_command(cmd_clip)
 cli.add_command(cmd_dump_grid)
 cli.add_command(cmd_init)
+cli.add_command(cmd_build)
+cli.add_command(cmd_mirror)
+cli.add_command(cmd_check)
 
 if __name__ == "__main__":
     cli()

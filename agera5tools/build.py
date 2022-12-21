@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) December 2022, Wageningen Environmental Research
 # Allard de Wit (allard.dewit@wur.nl)
-
-# This will be set to True only for commandline mode. Not when importing
-# agera5tools in python.
 import logging
 import shutil
 from uuid import uuid4
@@ -11,6 +8,7 @@ import datetime as dt
 from zipfile import ZipFile
 import concurrent.futures
 import copy
+from itertools import product
 import time
 from pathlib import Path
 
@@ -18,7 +16,7 @@ import cdsapi
 import sqlalchemy as sa
 import xarray as xr
 
-from .util import days_in_month, variable_names, create_target_fname, last_day_in_month, add_grid
+from .util import days_in_month, variable_names, create_target_fname, last_day_in_month, add_grid, convert_to_celsius
 from . import config
 
 
@@ -112,13 +110,14 @@ def determine_build_range():
     return build_month_years
 
 
-def convert_ncfiles_to_dataframe(nc_files):
+def convert_ncfiles_to_dataframe(nc_files, to_celsius=True):
     """reads the NetCDF files as multifile dataset and convert to dataframe
 
     This also includes adding the AgERA5 grid, renaming all columns to lower case,
     removing rows witn N/A values and dropping the lat/lon columns.
 
-    :param nc_files:
+    :param nc_files: a list of NetCDF file to treat as one meta file
+    :param to_celsius: convert Kelvin to Celsius
     :return: a dataframe representation of the NetCDF files
     """
     ds = xr.open_mfdataset(nc_files)
@@ -131,41 +130,94 @@ def convert_ncfiles_to_dataframe(nc_files):
             .drop(columns=["lat", "lon"])
             .rename(columns=rename_cols)
           )
+    df["day"] = df["day"].dt.date
     ix = df.isna().any(axis=1)
     df = df[~ix]
+
+    if config.misc.kelvin_to_celsius:
+        df = convert_to_celsius(df)
+
     return df
 
 
-def df_to_database(df, year, month):
+def df_to_database(df, descriptor):
     """Insert dataframe rows into the database.
 
     :param df: a dataframe with AgERA5 data
+    :param descriptor: a descriptor for this set of data, usually year-month ("2000-01") or a date ("2000-01-01")
     """
+    logger = logging.getLogger(__name__)
     engine = sa.create_engine(config.database.dsn)
-    # t1 = time.time()
     try:
         with engine.begin() as DBconn:
             df.to_sql(config.database.agera5_table_name, DBconn, if_exists="append", index=False)
-        # print(f"Inserting data took {time.time() - t1:5.1} seconds")
+            logger.info(f"Written AgERA5 data for {descriptor} to database.")
     except sa.exc.IntegrityError as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"Failed inserting AgERA5 data for {year}-{month:02}: duplicate rows!")
+        logger.error(f"Failed inserting AgERA5 data for {descriptor}: duplicate rows!")
 
 
-def df_to_csv(df, year, month):
+def df_to_csv(df, descriptor):
     """Write dataframe to a compressed CSV file
 
     :param df:  a dataframe with AgERA5 data
+    :param descriptor: a descriptor for this set of data, usually year-month ("2000-01") or a date ("2000-01-01")
     :return: the name of the CSV file where data is written.
     """
-    csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{year}_{month:02}.csv.gz"
+    logger = logging.getLogger(__name__)
+    csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{descriptor}.csv.gz"
     try:
         df.to_csv(csv_fname, header=True, index=False, date_format="%Y-%m-%d",
                       compression={'method': 'gzip', 'compresslevel': 5})
+        logger.info(f"Written output for {descriptor} to CSV: {csv_fname}")
     except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.exception(f"Failed writing CSV file with AgERA5 data for {year}-{month:02}.")
+        logger.exception(f"Failed writing CSV file with AgERA5 data for {descriptor}).")
 
+    return csv_fname
+
+
+def nc_files_available(varname, year, month):
+    """This checks the available NetCDF file on the disk cache. If all files are already available, return True
+    else False.
+
+    :param varname: the AgERA5 variable name
+    :param year: the year
+    :param month: the month
+    :return: True|False
+    """
+    ndays = days_in_month(year, month)
+    days = [dt.date(year, month, d+1) for d in range(ndays)]
+    nc_fnames = [create_target_fname(varname, day, config.data_storage.netcdf_path) for day in days]
+    files_exist = [f.exists() for f in nc_fnames]
+    return all(files_exist)
+
+
+def get_nc_filenames(varnames, year, month, check=True):
+    """Constructs the complete set of AgERA5 NetCDF filenames for given variables names, month and year.
+
+    :param varnames: The list of AgERA5 variables names
+    :param year: the year
+    :param month: the month
+    :param check: check if all files actually exist
+    :return: A list of full paths to the NetCDF files
+    """
+    logger = logging.getLogger(__name__)
+    ndays = days_in_month(year, month)
+    days = [dt.date(year, month, d+1) for d in range(ndays)]
+    nc_fnames = []
+    for varname, day in product(varnames, days):
+        fname = create_target_fname(varname, day, config.data_storage.netcdf_path)
+        nc_fnames.append(fname)
+
+    if check:
+        missing = [f for f in nc_fnames if not f.exists()]
+        if missing:
+            for f in missing:
+                logger.error(f"AgERA5 file is missing: {f}")
+            msg =f"Cannot continue, {len(missing)} AgERA5 files are missing, see log for details"
+            logger.error(msg)
+            raise RuntimeError(msg)
+
+    return nc_fnames
 
 def build(to_database=True, to_csv=False):
     """Builds the AgERA5tools database.
@@ -179,26 +231,31 @@ def build(to_database=True, to_csv=False):
     """
     logger = logging.getLogger(__name__)
     build_month_years = determine_build_range()
+    selected_variables = [varname for varname, selected in config.variables.items() if selected]
+
     for year, month in build_month_years:
         logger.info(f"Starting AgERA5 download for {year}-{month:02}")
-        to_download = []
-        for varname, selected in config.variables.items():
-            if selected:
-                to_download.append((varname, year, month))
-        logger.info(f"Starting concurrent CDS download of {len(to_download)} AgERA5 variables.")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(to_download)) as executor:
-            downloaded_sets = executor.map(download_one_month, to_download)
+        potential_downloads = [(v, year, month) for v in selected_variables]
+        actual_downloads = [inp for inp in potential_downloads if not nc_files_available(*inp)]
+        if actual_downloads:
+            logger.info(f"Starting concurrent CDS download of {len(actual_downloads)} AgERA5 variables.")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(actual_downloads)) as executor:
+                downloaded_sets = executor.map(download_one_month, actual_downloads)
 
-        downloaded_ncfiles = []
-        for dset in downloaded_sets:
-            ncfiles = unpack_cds_download(dset)
-            downloaded_ncfiles.extend(ncfiles)
+            downloaded_ncfiles = []
+            for dset in downloaded_sets:
+                ncfiles = unpack_cds_download(dset)
+                downloaded_ncfiles.extend(ncfiles)
+        else:
+            logger.info(f"Skipping download, NetCDF files already exist.")
 
-        df = convert_ncfiles_to_dataframe(downloaded_ncfiles)
+    for year, month in build_month_years:
+        nc_files = get_nc_filenames(selected_variables, year, month)
+        df = convert_ncfiles_to_dataframe(nc_files)
         if to_database:
-            df_to_database(df, year, month)
+            df_to_database(df, descriptor=f"{year}-{month:02}")
         if to_csv:
-            df_to_csv(df, year, month)
+            df_to_csv(df, descriptor=f"{year}-{month:02}")
 
 if __name__ == "__main__":
     build()

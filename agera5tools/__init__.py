@@ -77,13 +77,14 @@ def read_config():
     """
 
     default_config = True
-    if "AGERA5T_CONFIG" in os.environ:
-        agera5t_config = Path(os.environ["AGERA5T_CONFIG"]).absolute()
+    if "AGERA5TOOLS_CONFIG" in os.environ:
+        agera5t_config = Path(os.environ["AGERA5TOOLS_CONFIG"]).absolute()
         default_config = False
     else:
         agera5t_config = Path(__file__).parent / "agera5tools.yaml"
         msg = "No config found: Using default AGERA5TOOLS configuration!"
         click.echo(msg)
+    print(f"using config from {agera5t_config}")
 
     try:
         with open(agera5t_config) as fp:
@@ -116,6 +117,8 @@ from .dump_clip import dump, clip
 from .extract_point import extract_point
 from . import build
 from . import init
+from . import check
+from . import mirror
 
 
 

@@ -19,6 +19,7 @@ misc:
     lon: 90.00
     lat: 23.97
   grid_search_radius: 0.2
+  kelvin_to_celsius: yes
 cdsapi:
   url: https://cds.climate.copernicus.eu/api/v2
   key: 33724dbc-8b17-414c-aaa0-49754f46720f

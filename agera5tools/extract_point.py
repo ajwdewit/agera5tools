@@ -7,13 +7,14 @@ import pandas as pd
 
 CMD_MODE = True if os.environ["CMD_MODE"] == "1" else False
 from .util import create_agera5_fnames, convert_to_celsius
+from . import config
 
 
-def extract_point(agera5_dir, point, startday, endday, tocelsius=False):
+def extract_point(point, startday, endday, tocelsius=False):
 
     df_final = pd.DataFrame()
     for day in pd.date_range(startday, endday):
-        fnames = create_agera5_fnames(agera5_dir, day)
+        fnames = create_agera5_fnames(config.data_storage.netcdf_path, day)
         ds = xr.open_mfdataset(fnames)
         pnt = ds.sel(lon=point.longitude, lat=point.latitude, method="nearest")
         df = pnt.to_dataframe()

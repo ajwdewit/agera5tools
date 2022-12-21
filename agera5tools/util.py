@@ -104,6 +104,12 @@ class BoundingBox:
     def get_cds_bbox(self):
         return [self.lat_max, self.lon_min, self.lat_min, self.lon_max]
 
+    def point_in_bbox(self, pnt):
+        r = (self.lon_min <= pnt.longitude <= self.lon_max) & \
+            (self.lat_min <= pnt.latitude <= self.lat_max)
+        return r
+
+
 class Point:
     """Defines a point with a given longitude/latitude
 
@@ -129,7 +135,8 @@ def convert_to_celsius(df):
     :return: a DataFrame with con
     """
     for colname in df.columns:
-        if colname.startswith("Temp") or colname.startswith("Dew"):
+        colname = colname.lower()
+        if colname.startswith("temp") or colname.startswith("dew"):
             df[colname] -= 273.15
     return df
 
@@ -240,3 +247,5 @@ def last_day_in_month(year, month):
         return dt.date(year, 12, 31)
     else:
         return dt.date(year, month+1, 1) - dt.timedelta(days=-1)
+
+
