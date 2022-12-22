@@ -1,10 +1,22 @@
+# Configuration file for AgERA5tools
+#
+# In order to point AgERA5tools to his configuration file set an environment variable in the
+# shell from where you are starting python.
+#
+# on Mac/linux:
+#   export AGERA5TOOLS_CONFIG=/path/to/agera5tools.yaml
+#
+# on MS Windows:
+#   set AGERA5TOOLS_CONFIG=c:/path/to/agera5tools.yaml
 version: 0.1
 logging:
+  # Details for the log. Log levels follow conventions of the python logging framework.
   log_path: /data/wit015/agera5/logs
   log_fname: agera5tools.log
   log_level_console: WARNING
   log_level_file: INFO
 region:
+  # This defines the characteristics of the region that you want to set up.
   name: "Bangladesh"
   boundingbox:
     lon_min: 87
@@ -12,29 +24,48 @@ region:
     lon_max: 93
     lat_max: 27
 temporal_range:
+  # Temporal range defines the time range for which the database should be retrieved from the CDS.
+  # Most important here is the start_year which should be >= 1979. For a database which will be
+  # updated daily (e.g. a mirror), the end_year should be in the future but for a database with a
+  # fixed time period another end_year can be chosen.
   start_year: 2022
   end_year: 2099
 misc:
+  # Miscellaneous settings:
+  #  - The reference point defines a point within the boundingbox that will be used by the mirror
+  #    procedure to check the available dates in the database. This point should be on land!
+  #  - grid_search_radius is the radius within which the nearest grid ID will be searched,
+  #    leave as is.
+  #  - kelvin_to_celsius indicates if temperature conversion should be done.
   reference_point:
     lon: 90.00
     lat: 23.97
   grid_search_radius: 0.2
   kelvin_to_celsius: yes
 cdsapi:
+  # Details for the Copernicus Climate Data Store. Information here will be written into the
+  # $HOME/.cdsapirc file, which is used by the python API client for the CDS.
   url: https://cds.climate.copernicus.eu/api/v2
   key: 33724dbc-8b17-414c-aaa0-49754f46720f
   uid: 62582
   verify: 1
 database:
+  # Details for the database that will be used to store the AgERA5 data.
+  # The data source name (dsn) points to the database and should have the form of an
+  # SQLAlchemy database URL: https://docs.sqlalchemy.org/en/20/core/engines.html
+  # Note that the URL may contain the database password in plain text which is a security
+  # risk.
   dsn: sqlite:////data/wit015/agera5/agera5.db
   agera5_table_name: weather_grid_agera5
   grid_table_name: grid_agera5
 data_storage:
+  # Storage path for NetCDF files, CSV files and temporary storage.
   netcdf_path: /data/wit015/agera5/ncfiles/
   keep_netcdf: yes
   tmp_path: /data/wit015/agera5/tmp
   csv_path: /data/wit015/agera5/csv
 variables:
+  # Select which variables should be downloaded from the CDS
   Temperature_Air_2m_Mean_24h: yes
   Temperature_Air_2m_Mean_Day_Time: no
   Temperature_Air_2m_Mean_Night_Time: no

@@ -110,33 +110,59 @@ def determine_build_range():
     return build_month_years
 
 
-def convert_ncfiles_to_dataframe(nc_files, to_celsius=True):
-    """reads the NetCDF files as multifile dataset and convert to dataframe
+def modify_dataframe(df):
+    """Modifies the dataframe to have it properly formatted. Such as:
+     - Renaming columns and forcing them into lower case
+     - Make the 'day' column a proper date object
+     - reset the index and remove lat/lon columns
+     - removing rows with N/A values
+     - convert Kelvin to Celsius if configured so.
 
-    This also includes adding the AgERA5 grid, renaming all columns to lower case,
-    removing rows witn N/A values and dropping the lat/lon columns.
+    :param df: a dataframe with AgERA5 data
+    :return: a modified dataframe
+    """
+    # Rename columns
+    rename_cols = {c:c.lower() for c in df.columns}
+    rename_cols.update({"time": "day"})
+    df = (df.reset_index()
+            .rename(columns=rename_cols)
+          )
+    # Drop lat/lon columns if an idgrid column is present
+    # otherwise, add 0.05 to move coordinates to grid centre
+    if "idgrid" in df.columns:
+        df = df.drop(columns=["lat", "lon"])
+    else:
+        df["lat"] += 0.05
+        df["lon"] += 0.05
+
+    # Convert day to a proper date object
+    df["day"] = df["day"].dt.date
+
+    # Remove any rows with N/A values
+    ix = df.isna().any(axis=1)
+    df = df[~ix]
+
+    # Convert Kelvin to Celsius if configured
+    if config.misc.kelvin_to_celsius:
+        df = convert_to_celsius(df)
+
+    # Solar radiation flux can be integer for more compact output
+    if "solar_radiation_flux" in df.columns:
+        df["solar_radiation_flux"] = df.solar_radiation_flux.astype(int)
+
+    return df
+
+
+def convert_ncfiles_to_dataframe(nc_files):
+    """reads the NetCDF files as multifile dataset, add a grid ID layer and convert it to dataframe
 
     :param nc_files: a list of NetCDF file to treat as one meta file
-    :param to_celsius: convert Kelvin to Celsius
     :return: a dataframe representation of the NetCDF files
     """
     ds = xr.open_mfdataset(nc_files)
     ds = add_grid(ds)
     df = ds.to_dataframe()
-
-    rename_cols = {c:c.lower() for c in df.columns}
-    rename_cols.update({"time": "day"})
-    df = (df.reset_index()
-            .drop(columns=["lat", "lon"])
-            .rename(columns=rename_cols)
-          )
-    df["day"] = df["day"].dt.date
-    ix = df.isna().any(axis=1)
-    df = df[~ix]
-
-    if config.misc.kelvin_to_celsius:
-        df = convert_to_celsius(df)
-
+    df = modify_dataframe(df)
     return df
 
 

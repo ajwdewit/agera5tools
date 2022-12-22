@@ -57,12 +57,12 @@ def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final",
     return nc_fname
 
 
-def create_agera5_fnames(agera5_dir, day):
+def create_agera5_fnames(agera5_dir, var_names, day):
     """returns the list of 22 AgERA5 variable filenames.
     """
     fnames = []
-    for varname in variable_names:
-        fname = create_target_fname(varname, day, agera5_dir)
+    for var_name in var_names:
+        fname = create_target_fname(var_name, day, agera5_dir)
         if not fname.exists():
             msg = f"Cannot find file: {fname}"
             if CMD_MODE:
@@ -109,6 +109,14 @@ class BoundingBox:
             (self.lat_min <= pnt.latitude <= self.lat_max)
         return r
 
+    def region_in_bbox(self, bbox):
+        r = (self.lon_min <= bbox.lon_min <= self.lon_max) & \
+            (self.lon_min <= bbox.lon_max <= self.lon_max) & \
+            (self.lat_min <= bbox.lat_min <= self.lat_max) & \
+            (self.lat_min <= bbox.lat_max <= self.lat_max)
+        return r
+
+
 
 class Point:
     """Defines a point with a given longitude/latitude
@@ -118,14 +126,17 @@ class Point:
     """
 
     def __init__(self, lon, lat):
-        if not -180 <= lon <= 180:
-            click.echo("Longitude not within -180:180")
-            sys.exit()
-        if not -90 <= lat <= 90:
-            click.echo("Latitude not within -90:90")
-            sys.exit()
-        self.latitude = lat
-        self.longitude = lon
+        try:
+            assert -180 <= lon <= 180, "Longitude not within -180:180"
+            assert -90 <= lat <= 90, "Latitude not within -90:90"
+            self.latitude = lat
+            self.longitude = lon
+        except AssertionError as e:
+            if CMD_MODE:
+                print(e)
+                sys.exit()
+            else:
+                raise
 
 
 def convert_to_celsius(df):
@@ -186,9 +197,9 @@ def write_dataframe(df, fname_output=None):
     :param fname_output: the output filename or None
     """
     if fname_output is None:
-        df.to_csv(sys.stdout, index=False, float_format="%7.3f")
+        df.to_csv(sys.stdout, index=False, float_format="%7.2f")
     elif fname_output.suffix == ".csv":
-        df.to_csv(fname_output, index=False, float_format="%7.3f")
+        df.to_csv(fname_output, index=False, float_format="%7.2f")
     elif fname_output.suffix == ".json":
         df.to_json(fname_output, index=False, orient="records")
     elif fname_output.suffix == ".db3":
@@ -246,6 +257,6 @@ def last_day_in_month(year, month):
     if month == 12:
         return dt.date(year, 12, 31)
     else:
-        return dt.date(year, month+1, 1) - dt.timedelta(days=-1)
+        return dt.date(year, month+1, 1) - dt.timedelta(days=1)
 
 

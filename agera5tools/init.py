@@ -97,6 +97,11 @@ def build_database():
 def init():
     set_CDSAPI_credentials()
     create_AgERA5_config()
+    r = click.confirm(("Continue creating/filling initial database tables? If this is the first time you "
+                        "run `init` you probably want to inspect/update your configuration file first."))
+    if r is False:
+        return
+
     build_database()
     fill_grid_table()
 
