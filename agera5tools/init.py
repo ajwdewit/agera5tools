@@ -78,7 +78,7 @@ def build_database():
             tbl1.append_column(sa.Column(variable.lower(), sa.Float))
 
     # Build table with grid definition
-    tbl2 = sa.Table("config.database.grid_table_name", meta,
+    tbl2 = sa.Table(config.database.grid_table_name, meta,
                    sa.Column("idgrid", sa.Integer, primary_key=True),
                    sa.Column("longitude", sa.Float),
                    sa.Column("latitude", sa.Float),

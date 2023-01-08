@@ -16,6 +16,7 @@ from .init import init
 from .build import build
 from .mirror import mirror
 from .check import check
+from .server import serve
 from . import config
 
 selected_variables = [varname for varname, selected in config.variables.items() if selected]
@@ -180,6 +181,13 @@ def cmd_check():
             click.echo(f" - {f}")
 
 
+@click.command("serve")
+def cmd_serve():
+    """Starts the http server to serve AgERA5 data through HTTP
+    """
+    serve()
+
+
 cli.add_command(cmd_extract_point)
 cli.add_command(cmd_dump)
 cli.add_command(cmd_clip)
@@ -188,6 +196,8 @@ cli.add_command(cmd_init)
 cli.add_command(cmd_build)
 cli.add_command(cmd_mirror)
 cli.add_command(cmd_check)
+cli.add_command(cmd_serve)
+
 
 if __name__ == "__main__":
     cli()
