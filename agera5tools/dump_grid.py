@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) December 2022, Wageningen Environmental Research
+# Allard de Wit (allard.dewit@wur.nl)
 from pathlib import Path
 
 import xarray as xr
@@ -17,6 +20,7 @@ def dump_grid():
     # compute grid centre instead of lower left
     df["latitude"] = df.lat + 0.05
     df["longitude"] = df.lon + 0.05
+    df = df.rename(columns={"lon": "ll_longitude", "lat": "ll_latitude"})
     # Only keep grids with land areas
     ix = df.land_fraction > 0
     df = df[ix]

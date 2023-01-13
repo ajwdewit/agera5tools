@@ -7,6 +7,7 @@ import sys, os
 import datetime as dt
 import sqlite3
 import calendar
+from math import log10
 
 import pandas as pd
 from numpy import arccos, cos, radians, sin
@@ -121,22 +122,25 @@ class BoundingBox:
 class Point:
     """Defines a point with a given longitude/latitude
 
-    :param lon: Longitude of point
-    :param lat: Latitude of point
+    :param longitude: Longitude of point
+    :param latitude: Latitude of point
     """
 
-    def __init__(self, lon, lat):
+    def __init__(self, longitude, latitude):
         try:
-            assert -180 <= lon <= 180, "Longitude not within -180:180"
-            assert -90 <= lat <= 90, "Latitude not within -90:90"
-            self.latitude = lat
-            self.longitude = lon
+            assert -180 <= longitude <= 180, "Longitude not within -180:180"
+            assert -90 <= latitude <= 90, "Latitude not within -90:90"
+            self.latitude = latitude
+            self.longitude = longitude
         except AssertionError as e:
             if CMD_MODE:
                 print(e)
                 sys.exit()
             else:
                 raise
+
+    def __str__(self):
+        return f"longitude: {self.longitude:6.2f}, latitude {self.latitude:5.2f}"
 
 
 def convert_to_celsius(df):
@@ -200,11 +204,14 @@ def write_dataframe(df, fname_output=None):
         df.to_csv(sys.stdout, index=False, float_format="%7.2f")
     elif fname_output.suffix == ".csv":
         df.to_csv(fname_output, index=False, float_format="%7.2f")
+        click.echo(f"Written CSV output to: {fname_output}")
     elif fname_output.suffix == ".json":
-        df.to_json(fname_output, index=False, orient="records")
+        df.to_json(fname_output, orient="records")
+        click.echo(f"Written JSON output to: {fname_output}")
     elif fname_output.suffix == ".db3":
         with sqlite3.connect(fname_output) as dbconn:
             df.to_sql("agera5", dbconn, index=False, if_exists="append")
+        click.echo(f"Written SQlite output to: {fname_output}")
     else:
         click.echo("Unrecognized output type, CSV (.csv), JSON (.json) and SQLite (.db3) are supported...")
 
@@ -260,3 +267,35 @@ def last_day_in_month(year, month):
         return dt.date(year, month+1, 1) - dt.timedelta(days=1)
 
 
+def wind10to2(wind10):
+    """Converts windspeed at 10m to windspeed at 2m using log. wind profile
+    """
+    wind2 = wind10 * (log10(2./0.033) / log10(10/0.033))
+    return wind2
+
+
+def json_date_serial(obj):
+    """Serializer for date/datetime objects.
+    """
+    if isinstance(obj, (dt.date, dt.datetime)):
+        return obj.isoformat()
+    raise TypeError("Object '%s' not JSON serializable." % type(obj))
+
+
+
+class BoundedFloat:
+    """This represents a float value that lies between a min and max value.
+
+    If now a ValueError is raised
+    """
+
+    def __init__(self, minvalue, maxvalue, msg):
+        self.minlat = minvalue
+        self.maxlat = maxvalue
+        self.msg = msg
+
+    def __call__(self, x):
+        x = float(x)
+        if not (self.minlat < x < self.maxlat):
+            raise ValueError(self.msg)
+        return x

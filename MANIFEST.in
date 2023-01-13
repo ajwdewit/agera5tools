@@ -1,3 +1,5 @@
 include LICENSE
 recursive-include agera5tools *.nc
 include agera5tools/agera5tools.yaml
+include agera5tools/help.*
+

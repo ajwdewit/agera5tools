@@ -88,7 +88,7 @@ def download_one_day(input):
     return dict(day=day, varname=agera5_variable_name, download_fname=download_fname)
 
 
-def mirror(to_database=True, to_csv=True):
+def mirror(to_csv=True):
     """mirrors the AgERA5tools database.
 
     This procedure will mirror the AgERA5 data at the Copernicus Climate Datastore. It will
@@ -96,7 +96,6 @@ def mirror(to_database=True, to_csv=True):
     procedure should be run daily to update the local database with the remote AgERA5 data at
     the CDS.
 
-    :param to_database: Flag indicating if results should be written to the database immediately
     :param to_csv: Flag indicating if a compressed CSV file should be written.
     """
     logger = logging.getLogger(__name__)
@@ -118,10 +117,13 @@ def mirror(to_database=True, to_csv=True):
             downloaded_ncfiles.extend(ncfiles)
 
         df = convert_ncfiles_to_dataframe(downloaded_ncfiles)
-        if to_database:
-            df_to_database(df, descriptor=day)
+        df_to_database(df, descriptor=day)
         if to_csv:
             df_to_csv(df, descriptor=day)
+
+        # Delete NetCDF files if required
+        if config.data_storage.keep_netcdf is False:
+            [f.unlink() for f in downloaded_ncfiles]
 
     return days
 

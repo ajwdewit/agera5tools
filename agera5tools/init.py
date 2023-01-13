@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) December 2022, Wageningen Environmental Research
+# Allard de Wit (allard.dewit@wur.nl)
 """Initializes AgERA5tools and sets up various properties:
 - Access to the ECMWF CDS through cdsapi
 - Location for AgERA5 NetCD files
@@ -6,7 +9,7 @@
 - The geographic window to download
 - The start year to begin downloading AgERA5
 """
-import sys
+import sys, os
 from pathlib import Path
 import shutil
 
@@ -36,6 +39,10 @@ def set_CDSAPI_credentials():
 def create_AgERA5_config():
     """Create a config file for AgERA5tools in the current folder.
     """
+    if "AGERA5TOOLS_CONFIG" in os.environ:
+        # Config already defined, we do not need a new one
+        return
+
     template_agera5t_config = Path(__file__).parent / "agera5tools.yaml"
     agera5_conf = Path.cwd() / "agera5tools.yaml"
     if agera5_conf.exists():
@@ -95,13 +102,10 @@ def build_database():
             sys.exit()
 
 def init():
-    set_CDSAPI_credentials()
     create_AgERA5_config()
-    r = click.confirm(("Continue creating/filling initial database tables? If this is the first time you "
-                        "run `init` you probably want to inspect/update your configuration file first."))
-    if r is False:
-        return
-
+    click.confirm(("\nIf this is the first time you run `init` you probably want to abort now and "
+                   "inspect/update your configuration file first."), abort=True)
+    set_CDSAPI_credentials()
     build_database()
     fill_grid_table()
 

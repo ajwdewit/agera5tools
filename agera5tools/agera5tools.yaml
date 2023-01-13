@@ -46,8 +46,8 @@ cdsapi:
   # Details for the Copernicus Climate Data Store. Information here will be written into the
   # $HOME/.cdsapirc file, which is used by the python API client for the CDS.
   url: https://cds.climate.copernicus.eu/api/v2
-  key: 33724dbc-8b17-414c-aaa0-49754f46720f
-  uid: 62582
+  key: <Your API key here.
+  uid: <Your UID here>
   verify: 1
 database:
   # Details for the database that will be used to store the AgERA5 data.

@@ -9,8 +9,6 @@ from zipfile import ZipFile
 import concurrent.futures
 import copy
 from itertools import product
-import time
-from pathlib import Path
 
 import cdsapi
 import sqlalchemy as sa
@@ -45,7 +43,8 @@ def unpack_cds_download(download_details):
     :return: a list of paths to downloaded files
     """
     nc_fnames_from_zip = []
-    with ZipFile(download_details["download_fname"]) as myzip:
+    zip_fname = download_details["download_fname"]
+    with ZipFile(zip_fname) as myzip:
         for zipfname in myzip.infolist():
             myzip.extract(zipfname, config.data_storage.tmp_path)
             tmp_fname = config.data_storage.tmp_path / zipfname.filename
@@ -53,6 +52,9 @@ def unpack_cds_download(download_details):
             nc_fname = create_target_fname(download_details["varname"], day, config.data_storage.netcdf_path)
             move_agera5_file(tmp_fname, nc_fname)
             nc_fnames_from_zip.append(nc_fname)
+
+    # Delete tmp download zip file
+    zip_fname.unlink()
 
     return nc_fnames_from_zip
 
@@ -282,6 +284,12 @@ def build(to_database=True, to_csv=False):
             df_to_database(df, descriptor=f"{year}-{month:02}")
         if to_csv:
             df_to_csv(df, descriptor=f"{year}-{month:02}")
+
+        # Delete NetCDF files if required
+        if config.data_storage.keep_netcdf is False:
+            [f.unlink() for f in nc_files]
+
+
 
 if __name__ == "__main__":
     build()

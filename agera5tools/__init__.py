@@ -2,9 +2,9 @@
 # Copyright (c) May 2021, Wageningen Environmental Research
 # Allard de Wit (allard.dewit@wur.nl)
 
-# This will be set to True only for commandline mode. Not when importing
-# agera5tools in python.
 import os, sys
+# This will be set to 1 only for commandline mode. Not when importing
+# agera5tools in python.
 os.environ["CMD_MODE"] = "0"
 from pathlib import Path
 import logging

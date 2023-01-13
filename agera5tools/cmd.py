@@ -32,7 +32,7 @@ def cli():
 @click.argument("startdate")
 @click.argument("enddate")
 @click.option("-o", "--output", type=click.Path(),
-              help=("output file to write to: .csv, .json and .db3 (SQLite) are supported."
+              help=("output file to write to: .csv, .json and .db3 (SQLite) are supported. "
                     "Giving no output will write to stdout in CSV format"))
 def cmd_extract_point(longitude, latitude, startdate, enddate, output=None):
     """Extracts AgERA5 data for given location and date range.
@@ -87,13 +87,13 @@ def cmd_dump(day, output=None, bbox=None, add_gridid=False):
 @click.option("-o", "--output_dir", type=click.Path(exists=True),
               help=("Directory to write output to. If not provided, will use current directory."))
 @click.option('--bbox', nargs=4, type=float,
-              help=("Bounding box: <lon_min> <lon_max> <lat_min< <lat max>"))
+              help=("Bounding box: <lon_min> <lon_max> <lat_min< <lat max>. "
+                    "If no bounding box is given it will use -180 180 -90 90"))
 def cmd_clip(day, output_dir=None, bbox=None, base_fname="agera5_clipped"):
     """Extracts a portion of agERA5 for the given bounding box and saves all
     selected AgERA5 variables to a single NetCDF.
 
     \b
-    AGERA5_PATH: Path to the AgERA5 dataset
     DAY: specifies the day to be clipped (yyyy-mm-dd)
     """
     day = check_date(day)
@@ -102,6 +102,7 @@ def cmd_clip(day, output_dir=None, bbox=None, base_fname="agera5_clipped"):
     ds_clip = clip(day, bbox)
     fname_output = output_dir / f"{base_fname}_{day}.nc"
     ds_clip.to_netcdf(fname_output)
+    click.echo(f"Written results to {fname_output}")
 
 
 @click.command("dump_grid")
@@ -123,14 +124,16 @@ def cmd_init():
 
     \b
     This implies the following:
+     - Creating a template configuration file in the current directory
      - Creating a $HOME/.cdsapirc file for access to the CDS
-
+     - Creating the database tables
+     - Filling the grid table with the reference grid.
     """
     try:
         init()
         print(f"AgERA5tools successfully initialized!.")
-    except RuntimeError as e:
-        print(f"AgERA5tools failed to initialize: {e}")
+    # except RuntimeError as e:
+    #     print(f"AgERA5tools failed to initialize: {e}")
     except KeyboardInterrupt:
         print("Exiting...")
 
@@ -143,8 +146,8 @@ def cmd_init():
 def cmd_build(to_database, to_csv):
     """Builds the AgERA5 database by bulk download from CDS
     """
-    print(f"db: {to_database}")
-    print(f"csv: {to_csv}")
+    print(f"Export to database: {to_database}")
+    print(f"Export to CSV: {to_csv}")
     if to_csv is False and to_database is False:
         msg = ("Warning: Only NetCDF files will be updated, no tabular output will be written, "
                "use either --to_database or --to_csv")
@@ -158,14 +161,18 @@ def cmd_build(to_database, to_csv):
 @click.command("mirror")
 @click.option("-c", "--to_csv", is_flag=True,
               help="Write AgERA5 data to compressed CSV files.")
-def cmd_mirror(to_database=False, to_csv=False):
-    """Incrementally updates the AgERA5 database by daily downloads from the CDS
+def cmd_mirror(to_csv=False):
+    """Incrementally updates the AgERA5 database by daily downloads from the CDS.
     """
-    days = mirror(to_database, to_csv)
+    days = mirror(to_csv)
     if not days:
-        click.echo("Found no days to update the AgERA5 database for")
+        click.echo("Found no days to update the AgERA5 database for.")
     else:
-        click.echo(f"Updated the AgERA5 database with the following days: {days}")
+        s = ""
+        for d in days:
+            s += f"{d.strftime('%Y-%m-%d')}, "
+        s = s[:-2]
+        click.echo(f"Updated the AgERA5 database with the following days: {s}")
 
 
 @click.command("check")
@@ -182,10 +189,12 @@ def cmd_check():
 
 
 @click.command("serve")
-def cmd_serve():
+@click.option("-p", "--port", help="Port to number to start listening, default=8080.", default=8080)
+def cmd_serve(port):
     """Starts the http server to serve AgERA5 data through HTTP
     """
-    serve()
+    print(f"Started serving AgERA5 data on http://localhost:{port}")
+    serve(port)
 
 
 cli.add_command(cmd_extract_point)
