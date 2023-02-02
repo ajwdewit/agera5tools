@@ -44,6 +44,9 @@ def unpack_cds_download(download_details):
     """
     nc_fnames_from_zip = []
     zip_fname = download_details["download_fname"]
+    if zip_fname is None:
+        return []
+
     with ZipFile(zip_fname) as myzip:
         for zipfname in myzip.infolist():
             myzip.extract(zipfname, config.data_storage.tmp_path)

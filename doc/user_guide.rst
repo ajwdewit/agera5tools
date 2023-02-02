@@ -31,21 +31,20 @@ Creating a python environment
 -----------------------------
 
 A python environment has to be created that has all the requirements for AgERA5tools. AgERA5tools was developed using
-python 3.8.10 but this is not critical. Older or more recent version of python will most likely work as well.
-Third party packages required for installing are:
+python 3.8.10 but this is not critical. Older or more recent version of python will most likely work as well. Third party packages required for installing are::
 
-- Pandas >= 1.5
-- SQLAlchemy >= 1.4
-- PyYAML >= 6.0
-- xarray >= 2022.12.0
-- dask >= 2022.7.7
-- click >= 8.1
-- flask >= 2.2
-- cdsapi >= 0.5.1
-- dotmap >= 1.3
-- netCDF4 >= 1.6
-- requests >= 2.28
-- wsgiserver >= 1.3
+    - Pandas >= 1.5
+    - SQLAlchemy >= 1.4
+    - PyYAML >= 6.0
+    - xarray >= 2022.12.0
+    - dask >= 2022.7.7
+    - click >= 8.1
+    - flask >= 2.2
+    - cdsapi >= 0.5.1
+    - dotmap >= 1.3
+    - netCDF4 >= 1.6
+    - requests >= 2.28
+    - wsgiserver >= 1.3
 
 Although exact version numbers are provided, this is usually not critical.
 
@@ -121,7 +120,7 @@ directory. Press enter to abort the init process in order to first modify the co
     $ agera5tools init
     No config found: Using default AGERA5TOOLS configuration!
     using config from /home/wit015/bin/miniconda3/envs/py38_a5t/lib/python3.8/site-packages/agera5tools/agera5tools.yaml
-    Successfully created agera5tools config file at: /home/wit015/Sources/python/agera5tools/tmp/agera5tools.yaml
+    Successfully created agera5tools config file at: /data/agera5/agera5tools.yaml
 
     If this is the first time you run `init` you probably want to inspect/update your configuration
     file first. [y/N]:
@@ -136,7 +135,7 @@ Adapting the configuration file
 For this guide we will mostly use the default settings which are already defined in the `agera5tools.yaml` file.
 It will set up agera5tools for a region including Bangladesh for a single year (2022). This will lead
 to a relatively small database file of 1.3 Gb. Be aware that choosing a large region, will very quickly lead to
-a large database and in such cases other database solutions should be chosen.
+a large database and in such cases other database solutions should be chosen. Moreover, for large areas agera5tools will require a considerable amount of computer memory because it converts a month of AgERA5 data into a pandas dataframe which must be held in-memory.
 
 Logging
 .......
@@ -346,10 +345,9 @@ Now we can finalize the init proces by rerunning the `init` command:
 
     $ agera5tools init
     using config from /data/agera5/agera5tools.yaml
-    Successfully created agera5tools config file at: /home/wit015/Sources/python/agera5tools/agera5tools.yaml
 
     If this is the first time you run `init` you probably want to abort now and inspect/update your
-    configuration file first. [y/N]: y
+    configuration file first. Continue? [y/N]: y
     The .cdsapirc file already exists at /home/wit015/.cdsapirc
     Succesfully created tables on DSN=Engine(sqlite:////data/agera5/agera5.db)
     AgERA5tools successfully initialized!.
@@ -465,8 +463,28 @@ on the number of days missing. Detailed information can be found in the log file
 
     $ agera5tools mirror
     using config from /data/agera5/agera5tools.yaml
-    Updated the AgERA5 database with the following days: 2023-01-04, 2023-01-05
+    Mirror found the following:
+     - Days found for mirroring: 2023-01-04, 2023-01-05
+     - Days successfully updated: 2023-01-04, 2023-01-05
 
+It may occur that days are not yet be available on the CDS. In that case `mirror` is not  able to download the data and it will not be able to update the database. Unfortunately, the python CDS API is such that it will issue a large number of error messages to the screen which are hard to intercept::
+
+    [ERROR] - Failed downloading Temperature_Air_2m_Max_Day_Time - 2023-01-19
+    Traceback (most recent call last):
+      File "/home/wit015/bin/miniconda3/envs/py38_a5t/lib/python3.8/site-packages/agera5tools/mirror.py", line 86, in download_one_day
+        c.retrieve('sis-agrometeorological-indicators', cds_query, download_fname)
+      File "/home/wit015/bin/miniconda3/envs/py38_a5t/lib/python3.8/site-packages/cdsapi/api.py", line 348, in retrieve
+        result = self._api("%s/resources/%s" % (self.url, name), request, "POST")
+      File "/home/wit015/bin/miniconda3/envs/py38_a5t/lib/python3.8/site-packages/cdsapi/api.py", line 506, in _api
+        raise Exception(
+    Exception: the request you have submitted is not valid. There is no data matching your request. Check that you have specified the correct fields and values..
+
+Nevertheless, the last lines summarize what `mirror` was able to do::
+
+    Mirror found the following:
+     - Days found for mirroring: 2023-01-19
+     - Days successfully updated: N/A
+     - Days failed to update: 2023-01-19, see log for details
 
 
 Other agera5tools commands
@@ -728,3 +746,324 @@ finally, take note of the warning below on using `agera5tools serve`.
 .. _`Flask web framework`: https://flask.palletsprojects.com/en/2.2.x/
 .. _`WSGI server`: https://pypi.org/project/WSGIserver/
 .. _`here`: https://github.com/tiangolo/uwsgi-nginx-flask-docker
+
+
+Using agera5tools directly from python
+======================================
+
+The shell commands described above can also be used from python directly by importing the agera5tools package.
+Their working is nearly identical as the shell commands. The major difference is that the python functions
+return either datasets (clip) or dataframes (extract_point, dump, dump_grid). An example for the `clip` function::
+
+    In [1]: import datetime as dt
+       ...: import agera5tools
+       ...: from agera5tools.util import BoundingBox
+       ...: day = dt.date(2018,1,1)
+       ...: bbox = BoundingBox(lon_min=87, lon_max=90, lat_min=24, lat_max=27)
+       ...: ds = agera5tools.clip(day, bbox)
+       ...:
+
+    In [2]: ds
+    Out[2]:
+    <xarray.Dataset>
+    Dimensions:                            (time: 1, lon: 30, lat: 30)
+    Coordinates:
+      * time                               (time) datetime64[ns] 2018-01-01
+      * lon                                (lon) float64 87.1 87.2 ... 89.9 90.0
+      * lat                                (lat) float64 26.9 26.8 ... 24.1 24.0
+    Data variables:
+        Precipitation_Flux                 (time, lat, lon) float32 dask.array<chunksize=(1, 30, 30), meta=np.ndarray>
+        Solar_Radiation_Flux               (time, lat, lon) float32 dask.array<chunksize=(1, 30, 30), meta=np.ndarray>
+        Temperature_Air_2m_Max_Day_Time    (time, lat, lon) float32 dask.array<chunksize=(1, 30, 30), meta=np.ndarray>
+        Temperature_Air_2m_Mean_24h        (time, lat, lon) float32 dask.array<chunksize=(1, 30, 30), meta=np.ndarray>
+        Temperature_Air_2m_Min_Night_Time  (time, lat, lon) float32 dask.array<chunksize=(1, 30, 30), meta=np.ndarray>
+        Vapour_Pressure_Mean               (time, lat, lon) float32 dask.array<chunksize=(1, 30, 30), meta=np.ndarray>
+        Wind_Speed_10m_Mean                (time, lat, lon) float32 dask.array<chunksize=(1, 30, 30), meta=np.ndarray>
+    Attributes:
+        CDI:          Climate Data Interface version 1.9.2 (http://mpimet.mpg.de/...
+        history:      Fri Mar 12 15:04:43 2021: cdo splitday /archive/ESG/wit015/...
+        Conventions:  CF-1.7
+        CDO:          Climate Data Operators version 1.9.2 (http://mpimet.mpg.de/...
+
+It works in a very similar way for the `extract_point` function::
+
+    In[6]: from agera5tools.util import Point
+    In[7]: pnt = Point(latitude=26, longitude=89)
+    In[8]: df = agera5tools.extract_point(pnt, startday=dt.date(2018, 1, 1), endday=dt.date(2018, 1, 31)),
+    In [7]: df.head(5)
+    Out[7]:
+              day  precipitation_flux  solar_radiation_flux  ...  temperature_air_2m_min_night_time  vapour_pressure_mean  wind_speed_10m_mean
+    0  2018-01-01                0.31              13282992  ...                          12.156799             11.809731             1.317589
+    1  2018-01-02                1.91              13646220  ...                          12.342041             11.711860             1.416075
+    2  2018-01-03                0.14              14817991  ...                          11.064514             11.198871             1.524268
+    3  2018-01-04                0.03              14131904  ...                          10.861877             11.413278             1.566405
+    4  2018-01-05                0.07              14315206  ...                          12.292969             10.984181             1.597181
+
+    [5 rows x 8 columns]
+
+Note that extracting point data for a long timeseries can be time-consuming because all netCDF files have to be opened, decompressed and the point extracted.
+
+
+A note on efficient database loading
+====================================
+
+Using ``agera5tools build`` for large areas and/or long time-series can be notoriously inefficient because of the large number of records that have to be loaded into the database. In such cases it is more efficient to dump data to CSV first and load the CSV files with dedicated loader tools. Moreover, for efficient loading it is best to disable any keys and lock the table for exclusive write mode, which is not done by agera5tools. Below I show an example of how efficient loading can be done for MySQL (or MariaDB) and PostgreSQL.
+
+Bulk loading AgERA5 with MySQL
+------------------------------
+
+For this tutorial I will be using some tricks and constructs that work well in a linux terminal environment. It may work similarly in a windows command prompt but it wasn't tested and your mileage may vary. If problems arise on windows, a solution is to install `cygwin <https://www.cygwin.com/>`_ and use the MySQL client from cygwin. Otherwise the Windows Subsystem for Linux (`WSL <https://learn.microsoft.com/en-us/windows/wsl/>`_) is an alternative. Furthermore, I assume that MySQL has been set up properly and that there is a `.my.cnf` file in your home folder that provides the username/password and default schema for automatically logging you onto the database. So typing `mysql` on the command prompt should bring you to the database::
+
+    $ mysql
+    Reading table information for completion of table and column names
+    You can turn off this feature to get a quicker startup with -A
+
+    Welcome to the MySQL monitor.  Commands end with ; or \g.
+    Your MySQL connection id is 37
+    Server version: 5.7.41-0ubuntu0.18.04.1 (Ubuntu)
+
+    Copyright (c) 2000, 2023, Oracle and/or its affiliates.
+
+    Oracle is a registered trademark of Oracle Corporation and/or its
+    affiliates. Other names may be trademarks of their respective
+    owners.
+
+    Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+    mysql>
+
+If the table for holding AgERA5 data does not yet exist, you need to create it:
+
+.. code:: sql
+
+    mysql> CREATE TABLE weather_grid_agera5 (
+        -> idgrid INTEGER NOT NULL,
+        -> day DATE NOT NULL,
+        -> temperature_air_2m_mean_24h FLOAT,
+        -> temperature_air_2m_max_day_time FLOAT,
+        -> temperature_air_2m_min_night_time FLOAT,
+        -> vapour_pressure_mean FLOAT,
+        -> precipitation_flux FLOAT,
+        -> solar_radiation_flux FLOAT,
+        -> wind_speed_10m_mean FLOAT,
+        -> PRIMARY KEY (idgrid, day)
+        -> );
+    Query OK, 0 rows affected (0.26 sec)
+
+    mysql> desc weather_grid_agera5;
+    +-----------------------------------+---------+------+-----+---------+-------+
+    | Field                             | Type    | Null | Key | Default | Extra |
+    +-----------------------------------+---------+------+-----+---------+-------+
+    | idgrid                            | int(11) | NO   | PRI | NULL    |       |
+    | day                               | date    | NO   | PRI | NULL    |       |
+    | temperature_air_2m_mean_24h       | float   | YES  |     | NULL    |       |
+    | temperature_air_2m_max_day_time   | float   | YES  |     | NULL    |       |
+    | temperature_air_2m_min_night_time | float   | YES  |     | NULL    |       |
+    | vapour_pressure_mean              | float   | YES  |     | NULL    |       |
+    | precipitation_flux                | float   | YES  |     | NULL    |       |
+    | solar_radiation_flux              | float   | YES  |     | NULL    |       |
+    | wind_speed_10m_mean               | float   | YES  |     | NULL    |       |
+    +-----------------------------------+---------+------+-----+---------+-------+
+    9 rows in set (0.00 sec)
+
+Next, we will need the MySQL `LOAD DATA` functionality to load the CSV data efficiently. For doing so we need to create a script that uses `LOAD DATA` to import the CSV file into the right table. For doing so, we need to have a look at the CSV file first in order to determine the order with which the columns are written in the CSV. The default behaviour is to write them in alphabetical order, except for the grid ID which will be the last column. Because the CSV files are compressed we decompress them with `gunzip -c` but use `head` to only look at the first 10 lines:
+
+.. code:: bash
+
+    $ gunzip -c weather_grid_agera5_2022-01.csv.gz | head
+    day,precipitation_flux,solar_radiation_flux,temperature_air_2m_max_day_time,temperature_air_2m_mean_24h,temperature_air_2m_min_night_time,vapour_pressure_mean,wind_speed_10m_mean,idgrid
+    2022-01-01,-0.0,13162135.0,292.19467,287.67047,284.1365,11.893626,1.4917772,4207471
+    2022-01-02,0.0,14147829.0,293.13916,287.74905,283.92963,11.357639,1.4644603,4207471
+    2022-01-03,0.0,14122248.0,292.5527,287.527,283.97925,11.133619,1.3984656,4207471
+    2022-01-04,0.0,14469930.0,292.50192,286.96817,283.54135,11.348025,1.5083425,4207471
+    2022-01-05,0.0,13900673.0,293.0584,287.81125,284.21835,11.7578745,1.5004104,4207471
+    2022-01-06,0.65,12647058.0,293.09354,288.46628,284.49408,12.955705,1.4924479,4207471
+    2022-01-07,0.85,10431268.0,293.1321,289.32684,286.35342,13.785025,1.3877448,4207471
+    2022-01-08,0.07,13741905.0,294.67032,289.89453,285.54935,14.013409,1.3313966,4207471
+    2022-01-09,0.25,12168522.0,294.0305,290.2176,286.22925,14.745159,1.4008508,4207471
+
+Here we can see that the column names in the CSV file are indeed in alphabetical order and the `idgrid` column is the last column. We have to take this into account when inserting columns in the CSV file to columns in the database.
+
+As we know the order of the columns we can now define the SQL query to load the data into the table. Most of the commands in the query below are easy to understand with some help of the `MySQL manual`_. The only element that requires explanation is that we are not reading from a CSV file directly, but instead we read from ``/dev/stdin``. Remember that `agera5tools` writes compressed CSV files using gzip. So reading from a CSV file would require us to first decompress the file. However, the `gunzip` command can write to ``/dev/stdin`` with the `-c` option. By using this approach we can unzip the CSV files on-the-fly, write the output to  ``/dev/stdin`` and let MySQL read it from there. This has an additional advantage that the loader file is reusable and we do not need to edit it to change the CSV filename when loading another file.
+
+We need to write the SQL query to a text file `load.sql` and write it in the same directory where the CSV files are stored, in this case ``/data/agera5/csv/``
+
+.. _`MySQL manual`: https://dev.mysql.com/doc/refman/5.7/en/load-data.html
+
+.. code:: sql
+
+    LOCK TABLES weather_grid_agera5 WRITE;
+    ALTER TABLE weather_grid_agera5 DISABLE KEYS;
+
+    LOAD DATA LOCAL INFILE '/dev/stdin'
+    INTO TABLE weather_grid_agera5
+    FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+    IGNORE 1 LINES
+    (@col1,@col2,@col3,@col4,@col5,@col6,@col7,@col8,@col9)
+    SET
+       day = str_to_date(@col1,'%Y-%m-%d'),
+       precipitation_flux = @col2,
+       solar_radiation_flux = @col3,
+       temperature_air_2m_mean_24h = @col4,
+       temperature_air_2m_max_day_time = @col5,
+       temperature_air_2m_min_night_time = @col6,
+       vapour_pressure_mean = @col7,
+       wind_speed_10m_mean = @col8,
+       idgrid = @col9
+    ;
+    ALTER TABLE weather_grid_agera5 ENABLE KEYS;
+    UNLOCK TABLES;
+
+The final step is now to start the actual loading process in MySQL. For this we use the `gunzip` command to decompress the CSV file, pipe the output from gunzip to the MySQL client program while instructing MySQL client to read the LOAD DATA instructions with ``mysql -e "source /data/agera5/csv/load.sql"``. One additional flag is sometimes required ``--local-infile`` which instructs MySQL to allow loading data from local clients (which is a security risk). The complete instruction for loading 1 month of AgERA5 data becomes::
+
+.. code:: bash
+
+    $ gunzip -c weather_grid_agera5_2022-01.csv.gz | mysql --local-infile -e  "source /data/agera5/csv/load.sql"
+
+We can now check if the number of records in the database corresponds with the number of lines in the CSV file. The number of lines in the CSV files is::
+
+    $ gunzip -c weather_grid_agera5_2022-01.csv.gz | wc -l
+    103076
+
+While the number of records in the database table is::
+
+    $ mysql
+    Reading table information for completion of table and column names
+    You can turn off this feature to get a quicker startup with -A
+
+    Welcome to the MySQL monitor.  Commands end with ; or \g.
+    Your MySQL connection id is 52
+    Server version: 5.7.41-0ubuntu0.18.04.1 (Ubuntu)
+
+    Copyright (c) 2000, 2023, Oracle and/or its affiliates.
+
+    Oracle is a registered trademark of Oracle Corporation and/or its
+    affiliates. Other names may be trademarks of their respective
+    owners.
+
+    Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+    mysql> select count(*) from weather_grid_agera5;
+    +----------+
+    | count(*) |
+    +----------+
+    |   103075 |
+    +----------+
+    1 row in set (0.03 sec)
+
+As you can see we are missing 1 record which is exactly the header line in the CSV file that we skipped when loading data from it.
+
+
+Bulk loading AgERA5 with PostgreSQL
+-----------------------------------
+
+For loading agERA5 data into PostgreSQL we can use a dedicated loader tool: `pgloader <https://pgloader.readthedocs.io>`_. I assume pgloader is intalled in your environmental and I also assume that there is a properly configured PosgreSQL database. Moreover we can log on to the right schema with the ``psql`` commandline tool. So first we log on to the database and create the output table with the following SQL:
+
+.. code:: sql
+
+    CREATE TABLE weather_grid_agera5 (
+            -> idgrid INTEGER NOT NULL,
+            -> day DATE NOT NULL,
+            -> temperature_air_2m_mean_24h FLOAT,
+            -> temperature_air_2m_max_day_time FLOAT,
+            -> temperature_air_2m_min_night_time FLOAT,
+            -> vapour_pressure_mean FLOAT,
+            -> precipitation_flux FLOAT,
+            -> solar_radiation_flux FLOAT,
+            -> wind_speed_10m_mean FLOAT
+            -> );
+
+Note that ``agera5tools init`` will automatically create the output table for you, but for the example we create it manually. In this case we also leave out the primary key definition as PostgreSQL has no option to disable indexes so it is better to create the primary key after loading all data. So after starting ``psql`` we create the table:
+
+.. code:: bash
+
+    $ psql -U <username> -W <password> -h <hostname> <databasename>
+    psql (12.13 (Ubuntu 12.13-1.pgdg18.04+1))
+    SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+    Type "help" for help.
+
+    agera5db=> CREATE TABLE weather_grid_agera5 (
+    agera5db(>     idgrid INTEGER NOT NULL,
+    agera5db(>     day DATE NOT NULL,
+    agera5db(>     temperature_air_2m_mean_24h FLOAT,
+    agera5db(>     temperature_air_2m_max_day_time FLOAT,
+    agera5db(>     temperature_air_2m_min_night_time FLOAT,
+    agera5db(>     vapour_pressure_mean FLOAT,
+    agera5db(>     precipitation_flux FLOAT,
+    agera5db(>     solar_radiation_flux FLOAT,
+    agera5db(>     wind_speed_10m_mean FLOAT
+    agera5db(>     );
+    CREATE TABLE
+    agera5db=>
+
+After creating the table for holding the agERA5 data, we can now write the control file that `pgloader` requires to load the data. They syntax is somewhat similar to the MySQL ``LOAD DATA`` statement but not compatible:
+
+.. code:: sql
+
+    LOAD CSV
+       FROM STDIN
+            HAVING FIELDS
+            (
+               day [date format 'YYYY-MM-DD'],
+               precipitation_flux,
+               solar_radiation_flux,
+               temperature_air_2m_mean_24h,
+               temperature_air_2m_max_day_time,
+               temperature_air_2m_min_night_time,
+               vapour_pressure_mean,
+               wind_speed_10m_mean,
+               idgrid
+            )
+       INTO postgresql://<user>:<passwd>@<hostname>/<dbname>?sslmode=require
+           TARGET TABLE weather_grid_agera5
+           TARGET COLUMNS
+               (
+               idgrid, day,
+               precipitation_flux,
+               solar_radiation_flux,
+               temperature_air_2m_mean_24h,
+               temperature_air_2m_max_day_time,
+               temperature_air_2m_min_night_time,
+               vapour_pressure_mean,
+               wind_speed_10m_mean
+               )
+       WITH skip header = 1,
+            fields terminated by ','
+       SET work_mem to '32 MB', maintenance_work_mem to '64 MB';
+
+Note that, similar to MySQL, the order of the column names in the "HAVING FIELDS" clause is critical for reading and inserting the data in the correct columns in the database table. Also with `pgloader` we can read directly from standard input (here: ``STDIN``) which avoids having to write decompressed CSV files. In my specific case, the database connection string needed an extra parameter ``sslmode=require``, this may depend on your database setup.
+
+Finally, we can start loading the data with the `pgloader` tool. I assume that we start pgloader from `/data/agera5/csv` which also contains the control file `load_agera5.ctl`. Moreover, we assign the current directory as work directory with ``-D $PWD`` which puts the pgloader log files in the current directory. The full command than becomes:
+
+.. code:: bash
+
+    $ gunzip -c weather_grid_agera5_2022-01.csv.gz | \
+      pgloader -D $PWD --logfile load_agera5.log --summary load_agera5.summary \
+               --no-ssl-cert-verification load_agera5.ctl
+    2023-01-31T13:54:22.039000Z LOG pgloader version "3.6.7~devel"
+    2023-01-31T13:54:29.243000Z LOG report summary reset
+
+We can now look at the summary to see if loading was successful:
+
+.. code:: bash
+
+    $ cat load_agera5.summary
+                        table name     errors       rows      bytes      total time
+    ------------------------------  ---------  ---------  ---------  --------------
+                             fetch          0          0                     0.009s
+                       before load          0          1                     0.041s
+    ------------------------------  ---------  ---------  ---------  --------------
+    "agera5db"."weather_grid_agera5"        0     103075     9.0 MB          6.945s
+    ------------------------------  ---------  ---------  ---------  --------------
+                   Files Processed          0          1                     0.021s
+           COPY Threads Completion          0          2                     6.945s
+    ------------------------------  ---------  ---------  ---------  --------------
+                 Total import time          ✓     103075     9.0 MB          6.966s
+
+
+Based on the summary results, we can see that loading was successful and we have loaded exactly 103075 lines.
+
+Bulk loading AgERA5 with Oracle
+-------------------------------
+
+Bulk loading of AgERA5 data into Oracle can be done with the `SQL*Loader <https://docs.oracle.com/en/database/oracle/oracle-database/19/sutil/oracle-sql-loader.html>`_ utility. Since I do not have an Oracle database readily available, I cannot demonstrate how this should be done exactly. However, it has many similarites with `pgloader` as the `SQL*Loader` tool also requires a control file that describes the inputs and output target.

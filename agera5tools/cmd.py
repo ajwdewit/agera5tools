@@ -8,7 +8,7 @@ import click
 # flags commandline mode
 os.environ["CMD_MODE"] = "1"
 
-from .util import BoundingBox, check_date, check_date_range, write_dataframe, Point
+from .util import BoundingBox, check_date, check_date_range, write_dataframe, Point, day_fmt
 from .extract_point import extract_point
 from .dump_clip import dump, clip
 from .dump_grid import dump_grid
@@ -164,15 +164,18 @@ def cmd_build(to_database, to_csv):
 def cmd_mirror(to_csv=False):
     """Incrementally updates the AgERA5 database by daily downloads from the CDS.
     """
-    days = mirror(to_csv)
+    days, days_failed = mirror(to_csv)
+    days_done = days.difference((days_failed))
     if not days:
         click.echo("Found no days to update the AgERA5 database for.")
     else:
-        s = ""
-        for d in days:
-            s += f"{d.strftime('%Y-%m-%d')}, "
-        s = s[:-2]
-        click.echo(f"Updated the AgERA5 database with the following days: {s}")
+
+        msg = "Mirror found the following:\n" \
+              f" - Days found for mirroring: {day_fmt(days)}\n" \
+              f" - Days successfully updated: {day_fmt(days_done)}\n"
+        if days_failed:
+              msg += f" - Days failed to update: {day_fmt(days_failed)}, see log for details\n"
+        click.echo(msg)
 
 
 @click.command("check")

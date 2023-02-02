@@ -299,3 +299,19 @@ class BoundedFloat:
         if not (self.minlat < x < self.maxlat):
             raise ValueError(self.msg)
         return x
+
+
+def day_fmt(days):
+    """Properly formats a list or set of days:
+    yyyy-mm-dd, yyyy-mm-dd, ...
+
+    """
+    s = ""
+    for d in days:
+        s += f"{d.strftime('%Y-%m-%d')}, "
+    if s:
+        s = s[:-2]
+    else:
+        s = "N/A"
+
+    return s

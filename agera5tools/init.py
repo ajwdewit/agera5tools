@@ -104,7 +104,7 @@ def build_database():
 def init():
     create_AgERA5_config()
     click.confirm(("\nIf this is the first time you run `init` you probably want to abort now and "
-                   "inspect/update your configuration file first."), abort=True)
+                   "inspect/update your configuration file first. Continue?"), abort=True)
     set_CDSAPI_credentials()
     build_database()
     fill_grid_table()

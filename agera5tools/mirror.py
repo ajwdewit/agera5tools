@@ -14,6 +14,8 @@ from .util import variable_names, get_grid
 from .build import unpack_cds_download, convert_ncfiles_to_dataframe, df_to_csv, df_to_database
 from . import config
 
+selected_variables = [varname for varname, selected in config.variables.items() if selected]
+
 
 def find_days_in_database():
     """Finds the available days in the AgERA5 database by querying the time-series on the
@@ -79,11 +81,14 @@ def download_one_day(input):
 
     download_fname = config.data_storage.tmp_path / f"cds_download_{uuid4()}.zip"
     c = cdsapi.Client(quiet=True)
-    c.retrieve('sis-agrometeorological-indicators', cds_query, download_fname)
-
-    msg = f"Downloaded data for {agera5_variable_name} for {day} to {download_fname}."
     logger = logging.getLogger(__name__)
-    logger.debug(msg)
+    try:
+        c.retrieve('sis-agrometeorological-indicators', cds_query, download_fname)
+        msg = f"Downloaded data for {agera5_variable_name} for {day} to {download_fname}."
+        logger.debug(msg)
+    except Exception as e:
+        logger.exception(f"Failed downloading {agera5_variable_name} - {day}")
+        download_fname = None
 
     return dict(day=day, varname=agera5_variable_name, download_fname=download_fname)
 
@@ -100,12 +105,12 @@ def mirror(to_csv=True):
     """
     logger = logging.getLogger(__name__)
     days = find_days_to_update()
+    days_failed = set()
     for day in sorted(days):
         logger.info(f"Starting AgERA5 download for {day}")
         to_download = []
-        for varname, selected in config.variables.items():
-            if selected:
-                to_download.append((varname, day))
+        for varname in selected_variables:
+            to_download.append((varname, day))
 
         logger.info(f"Starting concurrent CDS download of {len(to_download)} AgERA5 variables.")
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(to_download)) as executor:
@@ -116,6 +121,10 @@ def mirror(to_csv=True):
             ncfiles = unpack_cds_download(dset)
             downloaded_ncfiles.extend(ncfiles)
 
+        if len(downloaded_ncfiles) != len(selected_variables):
+            days_failed.add(day)
+            continue
+
         df = convert_ncfiles_to_dataframe(downloaded_ncfiles)
         df_to_database(df, descriptor=day)
         if to_csv:
@@ -125,7 +134,7 @@ def mirror(to_csv=True):
         if config.data_storage.keep_netcdf is False:
             [f.unlink() for f in downloaded_ncfiles]
 
-    return days
+    return days, days_failed
 
 if __name__ == "__main__":
     mirror()
