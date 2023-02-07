@@ -14,7 +14,9 @@ daily with a delay on realtime of 8 days.
 
 Nevertheless, setting up AgERA5 in a way that is convenient for end users still requires a considerable effort.
 For example, the dataset is provided by the CDS as netCDF files but a way to easily access the data is
-not available. In this respect, the end-user experience of the `NASA POWER`_ dataset is much better as it provides
+not available. The CDS provides an interface to query AgERA5 data: the `AgERA5 explorer`_ but the interface
+is limited, it is very slow and it only allows to manually download single variables in CSV format.
+In this respect, the end-user experience of the `NASA POWER`_ dataset is much better as it provides
 a user interface and a convenient web API to query data. The AgERA5tools package has been developed
 to alleviate the problem with accessing AgERA5 data. It makes setting up a local mirror of AgERA5 much easier,
 time series of meteorological data can be extracted easily and it provides a web API that can be used by
@@ -23,6 +25,7 @@ other applications to easily access AgERA5 data.
 
 .. _`AgERA5`: https://cds.climate.copernicus.eu/cdsapp#!/dataset/sis-agrometeorological-indicators
 .. _`NASA POWER`: https://power.larc.nasa.gov/
+.. _`AgERA5 explorer`: https://cds.climate.copernicus.eu/cdsapp#!/software/app-agriculture-agera5-explorer-data-extractor?tab=app
 
 Setting up AgERA5tools
 ======================
@@ -171,7 +174,7 @@ the region should be provided.
 Temporal range
 ..............
 
-The emporal range defines the time range for which the database should be retrieved from the CDS.
+The temporal range defines the time range for which the database should be retrieved from the CDS.
 Most important here is the start_year which should be >= 1979. For a database which will be
 updated daily (e.g. a mirror), the end_year should be in the future but for a database with a
 fixed time period another end_year can be chosen. For the current example, we only select data
@@ -191,7 +194,7 @@ Miscellaneous
 .............
 
 The most important setting here is the `reference_point`. This point is defined by its latitude/longitude
-and is used by agera5tools to query the database for the dates where AgERA5 data is available dates.
+and is used by agera5tools to query the database for the dates where AgERA5 data is available.
 Based on the difference between
 the available dates in the database and the current date, agera5tools decides which days should be mirrored
 and retrieved from the CDS. Note that the `reference_point` should lie *within the bounding box of the area
@@ -467,7 +470,7 @@ on the number of days missing. Detailed information can be found in the log file
      - Days found for mirroring: 2023-01-04, 2023-01-05
      - Days successfully updated: 2023-01-04, 2023-01-05
 
-It may occur that days are not yet be available on the CDS. In that case `mirror` is not  able to download the data and it will not be able to update the database. Unfortunately, the python CDS API is such that it will issue a large number of error messages to the screen which are hard to intercept::
+It may occur that days are not yet be available on the CDS. In that case `mirror` is not  ble to download the data and it will not be able to update the database. Unfortunately, the python CDS API is such that it will issue a large number of error messages to the screen which are hard to intercept::
 
     [ERROR] - Failed downloading Temperature_Air_2m_Max_Day_Time - 2023-01-19
     Traceback (most recent call last):
@@ -914,7 +917,7 @@ We need to write the SQL query to a text file `load.sql` and write it in the sam
     ALTER TABLE weather_grid_agera5 ENABLE KEYS;
     UNLOCK TABLES;
 
-The final step is now to start the actual loading process in MySQL. For this we use the `gunzip` command to decompress the CSV file, pipe the output from gunzip to the MySQL client program while instructing MySQL client to read the LOAD DATA instructions with ``mysql -e "source /data/agera5/csv/load.sql"``. One additional flag is sometimes required ``--local-infile`` which instructs MySQL to allow loading data from local clients (which is a security risk). The complete instruction for loading 1 month of AgERA5 data becomes::
+The final step is now to start the actual loading process in MySQL. For this we use the `gunzip` command to decompress the CSV file, pipe the output from gunzip to the MySQL client program while instructing MySQL client to read the LOAD DATA instructions with ``mysql -e "source /data/agera5/csv/load.sql"``. One additional flag is sometimes required ``--local-infile`` which instructs MySQL to allow loading data from local clients (which is a security risk). The complete instruction for loading 1 month of AgERA5 data becomes:
 
 .. code:: bash
 

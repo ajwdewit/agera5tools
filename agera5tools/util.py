@@ -140,7 +140,7 @@ class Point:
                 raise
 
     def __str__(self):
-        return f"longitude: {self.longitude:6.2f}, latitude {self.latitude:5.2f}"
+        return f"longitude {self.longitude:6.2f} and/or latitude {self.latitude:5.2f}"
 
 
 def convert_to_celsius(df):
