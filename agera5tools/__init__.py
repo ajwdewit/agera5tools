@@ -67,8 +67,10 @@ def setup_logging(config):
 
     logging.config.dictConfig(LOG_CONFIG)
 
-def read_config():
+def read_config(mk_paths=True):
     """Reads the YAML file with configuration for AgERA5tools
+
+    if mk_paths is True, it will create the output directories.
 
     The config file is basically read as a dict. For convenience this converted into a DotMap object
     for easy access of config elements with dot access.
@@ -101,18 +103,16 @@ def read_config():
     c.data_storage.tmp_path = Path(c.data_storage.tmp_path)
     c.data_storage.csv_path = Path(c.data_storage.csv_path)
     c.logging.log_path = Path(c.logging.log_path)
-    c.data_storage.tmp_path.mkdir(exist_ok=True)
-    c.data_storage.csv_path.mkdir(exist_ok=True)
-    c.logging.log_path.mkdir(exist_ok=True)
+    if mk_paths:
+        c.data_storage.tmp_path.mkdir(exist_ok=True)
+        c.data_storage.csv_path.mkdir(exist_ok=True)
+        c.logging.log_path.mkdir(exist_ok=True)
 
     return c
 
-if "READTHEDOCS" in os.environ:
-    # do not load config and do not set logging when building documentation on ReadTheDocs.io
-    pass
-else:
-    config = read_config()
-    setup_logging(config)
+mk_paths = False if "READTHEDOCS" in os.environ else True
+config = read_config(mk_paths)
+setup_logging(config)
 
 
 from .dump_grid import dump_grid
