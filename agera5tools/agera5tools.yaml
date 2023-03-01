@@ -11,7 +11,7 @@
 version: 0.1
 logging:
   # Details for the log. Log levels follow conventions of the python logging framework.
-  log_path: /data/wit015/agera5/logs
+  log_path: /tmp/agera5/logs
   log_fname: agera5tools.log
   log_level_console: WARNING
   log_level_file: INFO
@@ -55,15 +55,15 @@ database:
   # SQLAlchemy database URL: https://docs.sqlalchemy.org/en/20/core/engines.html
   # Note that the URL may contain the database password in plain text which is a security
   # risk.
-  dsn: sqlite:////data/wit015/agera5/agera5.db
+  dsn: sqlite:////tmp/agera5/agera5.db
   agera5_table_name: weather_grid_agera5
   grid_table_name: grid_agera5
 data_storage:
   # Storage path for NetCDF files, CSV files and temporary storage.
-  netcdf_path: /data/wit015/agera5/ncfiles/
+  netcdf_path: /tmp/agera5/ncfiles/
   keep_netcdf: yes
-  tmp_path: /data/wit015/agera5/tmp
-  csv_path: /data/wit015/agera5/csv
+  tmp_path: /tmp/agera5/tmp
+  csv_path: /tmp/agera5/csv
 variables:
   # Select which variables should be downloaded from the CDS
   Temperature_Air_2m_Mean_24h: yes
