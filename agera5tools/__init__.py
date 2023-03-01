@@ -18,7 +18,7 @@ from . import util
 
 __version__ = "2.0.0"
 
-def setup_logging(config):
+def setup_logging(config, has_filesystem):
     """sets up the logging system for both logging to file and to console.
 
     file logging is based on a rotating file handler to avoid log files becoming very large.
@@ -59,7 +59,7 @@ def setup_logging(config):
                 },
             },
             'root': {
-                'handlers': ['console', 'file'],
+                'handlers': ['console', 'file'] if has_filesystem else ['console'],
                 'propagate': True,
                 'level': 'NOTSET'
             }
@@ -110,9 +110,9 @@ def read_config(mk_paths=True):
 
     return c
 
-mk_paths = False if "READTHEDOCS" in os.environ else True
-config = read_config(mk_paths)
-setup_logging(config)
+has_filesystem = False if "READTHEDOCS" in os.environ else True
+config = read_config(mk_paths=has_filesystem)
+setup_logging(config, has_filesystem)
 
 
 from .dump_grid import dump_grid
