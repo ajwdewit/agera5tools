@@ -59,13 +59,42 @@ def setup_logging(config, has_filesystem):
                 },
             },
             'root': {
-                'handlers': ['console', 'file'] if has_filesystem else ['console'],
+                'handlers': ['console', 'file'],
                 'propagate': True,
                 'level': 'NOTSET'
             }
         }
 
-    logging.config.dictConfig(LOG_CONFIG)
+    LOG_CONFIG_RTD = \
+        {
+            'version': 1,
+            'disable_existing_loggers': True,
+            'formatters': {
+                'standard': {
+                    'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                },
+                'brief': {
+                    'format': '[%(levelname)s] - %(message)s'
+                },
+            },
+            'handlers': {
+                'console': {
+                    'level': LOG_LEVEL_CONSOLE,
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'brief'
+                },
+            },
+            'root': {
+                'handlers': ['console'],
+                'propagate': True,
+                'level': 'NOTSET'
+            }
+        }
+
+    if has_filesystem:
+        logging.config.dictConfig(LOG_CONFIG)
+    else:
+        logging.config.dictConfig(LOG_CONFIG_RTD)
 
 def read_config(mk_paths=True):
     """Reads the YAML file with configuration for AgERA5tools
