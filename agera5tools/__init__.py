@@ -107,9 +107,12 @@ def read_config():
 
     return c
 
-
-config = read_config()
-setup_logging(config)
+if "READTHEDOCS" in os.environ:
+    # do not load config and do not set logging when building documentation on ReadTheDocs.io
+    pass
+else:
+    config = read_config()
+    setup_logging(config)
 
 
 from .dump_grid import dump_grid
