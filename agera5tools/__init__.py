@@ -16,7 +16,7 @@ import click
 
 from . import util
 
-__version__ = "2.0.0"
+__version__ = "2.0.3"
 
 def setup_logging(config, has_filesystem):
     """sets up the logging system for both logging to file and to console.
@@ -133,9 +133,9 @@ def read_config(mk_paths=True):
     c.data_storage.csv_path = Path(c.data_storage.csv_path)
     c.logging.log_path = Path(c.logging.log_path)
     if mk_paths:
-        c.data_storage.tmp_path.mkdir(exist_ok=True)
-        c.data_storage.csv_path.mkdir(exist_ok=True)
-        c.logging.log_path.mkdir(exist_ok=True)
+        c.data_storage.tmp_path.mkdir(exist_ok=True, parents=True)
+        c.data_storage.csv_path.mkdir(exist_ok=True, parents=True)
+        c.logging.log_path.mkdir(exist_ok=True, parents=True)
 
     return c
 
