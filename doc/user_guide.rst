@@ -807,6 +807,35 @@ It works in a very similar way for the `extract_point` function::
 Note that extracting point data for a long timeseries can be time-consuming because all netCDF files have to be opened, decompressed and the point extracted.
 
 
+Using agera5tools with PCSE models
+==================================
+
+AgERA5tools was designed with crop models running in `PCSE`_ in mind, so you directly use output from the `agera5tools serve` into your model running in PCSE. Note that you do need at least the set of weather variables in the default configuration file, otherwise the WeatherDataProvider will complain about missing variables. Moreover, you need to have PCSE installed in your python environment::
+
+    In [1]: import agera5tools
+    using config from /data/agera5/agera5tools.yaml
+
+    In [2]: from agera5tools.wdp import AgERA5WeatherDataProvider
+
+    In [3]: wdp = AgERA5WeatherDataProvider(longitude=88, latitude=25)
+
+    In [4]: print(wdp)
+    Weather data provided by: AgERA5WeatherDataProvider
+    --------Description---------
+    Weather data from AgERA5 for Bangladesh
+    ----Site characteristics----
+    Elevation:   35.9
+    Latitude:  25.000
+    Longitude: 88.000
+    Data available for 2022-01-01 - 2023-01-25
+    Number of missing days: 0
+
+This assumes that `agera5tools serve` is running under `http://localhost:8080`, otherwise you need to
+specify the hostname and port number with `AgERA5WeatherDataProvider(longitude=88, latitude=25, hostname=<host>, port=<num>)`
+
+.. _`PCSE`: https://pcse.readthedocs.io
+
+
 A note on efficient database loading
 ====================================
 
