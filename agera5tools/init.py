@@ -64,7 +64,7 @@ def fill_grid_table():
           (df.longitude >= config.region.boundingbox.lon_min) &
           (df.longitude <= config.region.boundingbox.lon_max))
     df = df[ix]
-    df = (df.drop(columns=["lat", "lon", "land_fraction"])
+    df = (df.drop(columns=["ll_latitude", "ll_longitude", "land_fraction"])
             .rename(columns={"idgrid_era5": "idgrid"}))
 
     engine = sa.create_engine(config.database.dsn)
