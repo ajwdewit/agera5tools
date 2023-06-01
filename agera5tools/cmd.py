@@ -165,7 +165,7 @@ def cmd_mirror(to_csv=False):
     """Incrementally updates the AgERA5 database by daily downloads from the CDS.
     """
     days, days_failed = mirror(to_csv)
-    days_done = days.difference((days_failed))
+    days_done = days.difference(days_failed)
     if not days:
         click.echo("Found no days to update the AgERA5 database for.")
     else:

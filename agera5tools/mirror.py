@@ -105,6 +105,10 @@ def mirror(to_csv=True):
     """
     logger = logging.getLogger(__name__)
     days = find_days_to_update()
+    if days:
+        logger.info(f"Found following days for updating AgERA5: {days}")
+    else:
+        logger.info(f"Found no days for updating AgERA5")
     days_failed = set()
     for day in sorted(days):
         logger.info(f"Starting AgERA5 download for {day}")

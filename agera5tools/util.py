@@ -315,3 +315,15 @@ def day_fmt(days):
         s = "N/A"
 
     return s
+
+
+def chunker(seq, size):
+    """Returns a generator that divides seq in chunks of given size.
+
+    The last chunk can have less than size entities.
+
+    :param seq: The sequence to be chunked
+    :param size: The chunk size, should be > 0
+    :return: a generator that chunks the sequence
+    """
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))

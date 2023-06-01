@@ -58,6 +58,7 @@ database:
   dsn: sqlite:////tmp/agera5/agera5.db
   agera5_table_name: weather_grid_agera5
   grid_table_name: grid_agera5
+  chunk_size: 10000
 data_storage:
   # Storage path for NetCDF files, CSV files and temporary storage.
   netcdf_path: /tmp/agera5/ncfiles/

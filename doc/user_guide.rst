@@ -247,6 +247,11 @@ store the AgERA5 data. Note that the DSN should follow the SQLAlchemy database U
 convention. The example below uses a local SQLite database which is a serverless database
 without security risks.
 
+The `chunk_size` parameter defines the number of records that are written to the database
+as one chunk. Increasing this number may increase database performance. Chunked writing
+was added because a log message is written after each chunk which allows to keep track of
+progress during database writing. The `chunk_size` parameter should be larger than zero.
+
 .. warning::
     The data source name to the database stores the database username/password in plain text.
     This is a potential security risk and for servers that are exposed on the web other
@@ -266,6 +271,7 @@ without security risks.
       dsn: sqlite:////data/agera5/agera5.db
       agera5_table_name: weather_grid_agera5
       grid_table_name: grid_agera5
+      chunk_size: 10000
 
 Data storage locations
 ......................

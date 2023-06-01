@@ -3,6 +3,7 @@
 # Allard de Wit (allard.dewit@wur.nl)
 import logging
 import shutil
+import time
 from uuid import uuid4
 import datetime as dt
 from zipfile import ZipFile
@@ -11,10 +12,11 @@ import copy
 from itertools import product
 
 import cdsapi
-import sqlalchemy as sa
 import xarray as xr
+import sqlalchemy as sa
 
-from .util import days_in_month, variable_names, create_target_fname, last_day_in_month, add_grid, convert_to_celsius
+from .util import days_in_month, variable_names, create_target_fname, last_day_in_month, \
+    add_grid, convert_to_celsius, chunker
 from . import config
 
 
@@ -121,6 +123,7 @@ def modify_dataframe(df):
      - Make the 'day' column a proper date object
      - reset the index and remove lat/lon columns
      - removing rows with N/A values
+     - removing rows with idgrid == -999
      - convert Kelvin to Celsius if configured so.
 
     :param df: a dataframe with AgERA5 data
@@ -145,6 +148,11 @@ def modify_dataframe(df):
 
     # Remove any rows with N/A values
     ix = df.isna().any(axis=1)
+    df = df[~ix]
+
+    # Remove rows with idgrid == -999
+    # this represents grids at the lowest row
+    ix = df.idgrid == -999
     df = df[~ix]
 
     # Convert Kelvin to Celsius if configured
@@ -179,10 +187,21 @@ def df_to_database(df, descriptor):
     """
     logger = logging.getLogger(__name__)
     engine = sa.create_engine(config.database.dsn)
+    meta = sa.MetaData(engine)
+    tbl = sa.Table(config.database.agera5_table_name, meta, autoload=True)
     try:
+        recs = df.to_dict(orient="records")
+        nrecs_written = 0
+        t1 = time.time()
         with engine.begin() as DBconn:
-            df.to_sql(config.database.agera5_table_name, DBconn, if_exists="append", index=False)
-            logger.info(f"Written AgERA5 data for {descriptor} to database.")
+            ins = tbl.insert()
+            for chunk in chunker(recs, config.database.chunk_size):
+                DBconn.execute(ins, chunk)
+                nrecs_written += len(chunk)
+                msg = f"Written {nrecs_written} from total {len(recs)} records to database."
+                logger.info(msg)
+        msg = f"Written AgERA5 data for {descriptor} to database in {time.time() - t1} seconds."
+        logger.info(msg)
     except sa.exc.IntegrityError as e:
         logger.error(f"Failed inserting AgERA5 data for {descriptor}: duplicate rows!")
 
