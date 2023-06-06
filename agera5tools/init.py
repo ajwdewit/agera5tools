@@ -10,14 +10,17 @@
 - The start year to begin downloading AgERA5
 """
 import sys, os
+import time
 from pathlib import Path
 import shutil
+import logging
 
 import click
 import sqlalchemy as sa
 
 from . import config
 from .dump_grid import dump_grid
+from .util import chunker
 
 
 def set_CDSAPI_credentials():
@@ -57,6 +60,8 @@ def create_AgERA5_config():
 def fill_grid_table():
     """Fill the grid table in the agera5 database.
     """
+    logger = logging.getLogger(__name__)
+
     df = dump_grid()
     # Subset grid to only contain relevant region
     ix = ((df.latitude >= config.region.boundingbox.lat_min) &
@@ -68,8 +73,21 @@ def fill_grid_table():
             .rename(columns={"idgrid_era5": "idgrid"}))
 
     engine = sa.create_engine(config.database.dsn)
+    meta = sa.MetaData(engine)
+    tbl = sa.Table(config.database.grid_table_name, meta, autoload=True)
+    recs = df.to_dict(orient="records")
+    nrecs_written = 0
+    t1 = time.time()
     with engine.begin() as DBconn:
-        df.to_sql("grid_agera5", DBconn, if_exists="append", index=False, method="multi")
+        ins = tbl.insert()
+        for chunk in chunker(recs, config.database.chunk_size):
+            DBconn.execute(ins, chunk)
+            nrecs_written += len(chunk)
+            msg = f"Written {nrecs_written} from total {len(recs)} records to database."
+            logger.info(msg)
+    msg = f"Written grid definition to database in {time.time() - t1} seconds."
+    logger.info(msg)
+
 
 
 def build_database():

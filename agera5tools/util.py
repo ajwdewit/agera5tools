@@ -239,10 +239,10 @@ def days_in_month(year, month):
     return 30
 
 
-def get_grid(engine, lon, lat, search_radius):
+def get_grid(engine, lon, lat, grid_table_name, search_radius):
     sql = f""" 
     SELECT idgrid, longitude, latitude
-    FROM grid_agera5
+    FROM {grid_table_name}
     WHERE latitude < {lat + search_radius} AND latitude > {lat - search_radius} AND 
         longitude < {lon + search_radius} AND longitude > {lon - search_radius} 
     """
