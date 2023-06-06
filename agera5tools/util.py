@@ -227,7 +227,8 @@ def add_grid(ds):
     return ds
 
 
-def days_in_month(year, month):
+def number_days_in_month(year, month):
+    """Returns the number of days in a month"""
 
     if month in (1, 3, 5, 7, 8, 10, 12):
         return 31

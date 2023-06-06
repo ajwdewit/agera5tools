@@ -3,6 +3,7 @@
 # Allard de Wit (allard.dewit@wur.nl)
 import logging
 import shutil
+import gzip
 import time
 from uuid import uuid4
 import datetime as dt
@@ -15,7 +16,7 @@ import cdsapi
 import xarray as xr
 import sqlalchemy as sa
 
-from .util import days_in_month, variable_names, create_target_fname, last_day_in_month, \
+from .util import number_days_in_month, variable_names, create_target_fname, last_day_in_month, \
     add_grid, convert_to_celsius, chunker
 from . import config
 
@@ -74,7 +75,7 @@ def download_one_month(input):
     :return: a dict with input variables and the path to the downloaded filename
     """
     agera5_variable_name, year, month = input
-    ndays_in_month = days_in_month(year, month)
+    ndays_in_month = number_days_in_month(year, month)
     cds_variable_details = copy.deepcopy(variable_names[agera5_variable_name])
 
     cds_query = {
@@ -215,9 +216,10 @@ def df_to_csv(df, descriptor):
     """
     logger = logging.getLogger(__name__)
     csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{descriptor}.csv.gz"
+    hdr = False if csv_fname.exists() else True
     try:
-        df.to_csv(csv_fname, header=True, index=False, date_format="%Y-%m-%d",
-                      compression={'method': 'gzip', 'compresslevel': 5})
+        with gzip.open(csv_fname, "a", compresslevel=5) as fp:
+            fp.write(df.to_csv(None, header=hdr, index=False, date_format="%Y-%m-%d").encode("utf-8"))
         logger.info(f"Written output for {descriptor} to CSV: {csv_fname}")
     except Exception as e:
         logger.exception(f"Failed writing CSV file with AgERA5 data for {descriptor}).")
@@ -234,25 +236,37 @@ def nc_files_available(varname, year, month):
     :param month: the month
     :return: True|False
     """
-    ndays = days_in_month(year, month)
+    ndays = number_days_in_month(year, month)
     days = [dt.date(year, month, d+1) for d in range(ndays)]
     nc_fnames = [create_target_fname(varname, day, config.data_storage.netcdf_path) for day in days]
     files_exist = [f.exists() for f in nc_fnames]
     return all(files_exist)
 
 
-def get_nc_filenames(varnames, year, month, check=True):
-    """Constructs the complete set of AgERA5 NetCDF filenames for given variables names, month and year.
+def dates_in_month(year, month):
+    """Returns the dates as a list for given year/month
+    """
+    ndays = number_days_in_month(year, month)
+    days = [dt.date(year, month, d + 1) for d in range(ndays)]
+    return days
+
+
+def get_nc_filenames(varnames, year, month, day=None, check=True):
+    """Constructs the complete set of AgERA5 NetCDF filenames for given variables names, year, month and
+    (optionally( day.
 
     :param varnames: The list of AgERA5 variables names
     :param year: the year
     :param month: the month
+    :param day: the day (optional)
     :param check: check if all files actually exist
     :return: A list of full paths to the NetCDF files
     """
     logger = logging.getLogger(__name__)
-    ndays = days_in_month(year, month)
-    days = [dt.date(year, month, d+1) for d in range(ndays)]
+    if day is None:
+        days = number_days_in_month(year, month)
+    else:
+        days = [day]
     nc_fnames = []
     for varname, day in product(varnames, days):
         fname = create_target_fname(varname, day, config.data_storage.netcdf_path)
@@ -300,16 +314,17 @@ def build(to_database=True, to_csv=False):
             logger.info(f"Skipping download, NetCDF files already exist.")
 
     for year, month in build_month_years:
-        nc_files = get_nc_filenames(selected_variables, year, month)
-        df = convert_ncfiles_to_dataframe(nc_files)
-        if to_database:
-            df_to_database(df, descriptor=f"{year}-{month:02}")
-        if to_csv:
-            df_to_csv(df, descriptor=f"{year}-{month:02}")
+        for day in dates_in_month(year, month):
+            nc_files = get_nc_filenames(selected_variables, year, month, day)
+            df = convert_ncfiles_to_dataframe(nc_files)
+            if to_database:
+                df_to_database(df, descriptor=f"{year}-{month:02}-{day:02}")
+            if to_csv:
+                df_to_csv(df, descriptor=f"{year}-{month:02}")
 
-        # Delete NetCDF files if required
-        if config.data_storage.keep_netcdf is False:
-            [f.unlink() for f in nc_files]
+            # Delete NetCDF files if required
+            if config.data_storage.keep_netcdf is False:
+                [f.unlink() for f in nc_files]
 
 
 
