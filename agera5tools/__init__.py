@@ -16,7 +16,7 @@ import click
 
 from . import util
 
-__version__ = "2.0.7"
+__version__ = "2.0.8"
 
 def setup_logging(config, has_filesystem):
     """sets up the logging system for both logging to file and to console.

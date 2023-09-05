@@ -207,18 +207,19 @@ def df_to_database(df, descriptor):
         logger.error(f"Failed inserting AgERA5 data for {descriptor}: duplicate rows!")
 
 
-def df_to_csv(df, descriptor):
+def df_to_csv(df, descriptor, filemode="w"):
     """Write dataframe to a compressed CSV file
 
     :param df:  a dataframe with AgERA5 data
     :param descriptor: a descriptor for this set of data, usually year-month ("2000-01") or a date ("2000-01-01")
+    :param filemode: the way the file should be opened: either "w" (write) or "a" (append)
     :return: the name of the CSV file where data is written.
     """
     logger = logging.getLogger(__name__)
     csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{descriptor}.csv.gz"
     hdr = False if csv_fname.exists() else True
     try:
-        with gzip.open(csv_fname, "a", compresslevel=5) as fp:
+        with gzip.open(csv_fname, filemode, compresslevel=5) as fp:
             fp.write(df.to_csv(None, header=hdr, index=False, date_format="%Y-%m-%d").encode("utf-8"))
         logger.info(f"Written output for {descriptor} to CSV: {csv_fname}")
     except Exception as e:
@@ -318,9 +319,10 @@ def build(to_database=True, to_csv=False):
             nc_files = get_nc_filenames(selected_variables, year, month, day)
             df = convert_ncfiles_to_dataframe(nc_files)
             if to_database:
-                df_to_database(df, descriptor=f"{year}-{month:02}-{day:02}")
+                df_to_database(df, descriptor=f"{day}")
             if to_csv:
-                df_to_csv(df, descriptor=f"{year}-{month:02}")
+                fm = "w" if day.day == 1 else "a"  # Start new file on 1st day of the month, else append
+                df_to_csv(df, descriptor=f"{year}-{month:02}", filemode=fm)
 
             # Delete NetCDF files if required
             if config.data_storage.keep_netcdf is False:
