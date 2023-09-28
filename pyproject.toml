@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agera5tools"
-version = "2.0.7"
+version = "2.0.8"
 authors = [
   { name="Allard de Wit", email="allard.dewit@wur.nl" },
 ]
