@@ -201,17 +201,20 @@ and retrieved from the CDS. Note that the `reference_point` should lie *within t
 of interest* and should be *located on land*.
 
 Some other settings have to do with the search radius (can be left as is) and whether values in Kelvin
-should be converted to Celsius.
+should be converted to Celsius. Finally the `agera5_version` has to be set, as of 23 September 2023, the
+version "1.0" is deprecated in favour of "1.1".
 
 .. code:: yaml
 
     misc:
       # Miscellaneous settings:
+      #  - agera5_version indicates the version to use. As of 2023-09-23 only v1.1 is available, v1.0 is deprecated
       #  - The reference point defines a point within the boundingbox that will be used by the mirror
       #    procedure to check the available dates in the database. This point should be on land!
       #  - grid_search_radius is the radius within which the nearest grid ID will be searched,
       #    leave as is.
       #  - kelvin_to_celsius indicates if temperature conversion should be done.
+      agera5_version: "1.1"
       reference_point:
         lon: 90.00
         lat: 23.97

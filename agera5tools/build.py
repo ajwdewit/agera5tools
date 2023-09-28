@@ -77,6 +77,7 @@ def download_one_month(input):
     agera5_variable_name, year, month = input
     ndays_in_month = number_days_in_month(year, month)
     cds_variable_details = copy.deepcopy(variable_names[agera5_variable_name])
+    version = str(config.misc.agera5_version).replace(".", "_")
 
     cds_query = {
             'format': 'zip',
@@ -85,6 +86,7 @@ def download_one_month(input):
             'month': f'{month:02}',
             'day': [f"{s+1:02}" for s in range(ndays_in_month)],
             'area': config.region.boundingbox.get_cds_bbox(),
+            'version': f'{version}'
         }
     cds_query.update(cds_variable_details)
 
