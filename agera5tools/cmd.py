@@ -18,10 +18,12 @@ from .mirror import mirror
 from .check import check
 from .server import serve
 from . import config
+from . import __version__
 
 selected_variables = [varname for varname, selected in config.variables.items() if selected]
 
 @click.group()
+@click.version_option(version=__version__, prog_name="agera5tools")
 def cli():
     pass
 

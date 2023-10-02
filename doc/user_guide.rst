@@ -126,7 +126,7 @@ directory. Press enter to abort the init process in order to first modify the co
     Successfully created agera5tools config file at: /data/agera5/agera5tools.yaml
 
     If this is the first time you run `init` you probably want to inspect/update your configuration
-    file first. [y/N]:
+    file first. Continue? [y/N]:
     Aborted!
 
 Now we need to inspect the `agera5tools.yaml` file with a text editor. We will go through the section of the
@@ -138,7 +138,9 @@ Adapting the configuration file
 For this guide we will mostly use the default settings which are already defined in the `agera5tools.yaml` file.
 It will set up agera5tools for a region including Bangladesh for a single year (2022). This will lead
 to a relatively small database file of 1.3 Gb. Be aware that choosing a large region, will very quickly lead to
-a large database and in such cases other database solutions should be chosen. Moreover, for large areas agera5tools will require a considerable amount of computer memory because it converts a month of AgERA5 data into a pandas dataframe which must be held in-memory.
+a large database and in such cases other database solutions should be chosen. Moreover, for large areas agera5tools
+will require a considerable amount of computer memory because it converts a month of AgERA5 data into a pandas dataframe
+which must be held in-memory.
 
 Logging
 .......

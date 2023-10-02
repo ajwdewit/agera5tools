@@ -68,6 +68,7 @@ def download_one_day(input):
     """
     agera5_variable_name, day = input
     cds_variable_details = copy.deepcopy(variable_names[agera5_variable_name])
+    version = str(config.misc.agera5_version).replace(".", "_")
 
     cds_query = {
             'format': 'zip',
@@ -76,7 +77,8 @@ def download_one_day(input):
             'month': f'{day.month:02}',
             'day': [f"{day.day:02}"],
             'area': config.region.boundingbox.get_cds_bbox(),
-        }
+            'version': f'{version}',
+    }
     cds_query.update(cds_variable_details)
 
     download_fname = config.data_storage.tmp_path / f"cds_download_{uuid4()}.zip"
