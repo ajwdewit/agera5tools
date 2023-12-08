@@ -4,6 +4,8 @@
 import logging
 from pathlib import Path
 import sys, os
+import platform
+import tempfile
 import datetime as dt
 import sqlite3
 import calendar
@@ -328,3 +330,28 @@ def chunker(seq, size):
     :return: a generator that chunks the sequence
     """
     return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+
+def get_user_home():
+    """A reasonable platform independent way to get the user home folder.
+    If PCSE runs under a system user then return the temp directory as returned
+    by tempfile.gettempdir()
+    """
+    user_home = None
+    if platform.system() == "Windows":
+        user = os.getenv("USERNAME")
+        if user is not None:
+            user_home = os.path.expanduser("~")
+    elif platform.system() == "Linux" or platform.system() == "Darwin":
+        user = os.getenv("USER")
+        if user is not None:
+            user_home = os.path.expanduser("~")
+    else:
+        msg = "Platform not recognized, using system temp directory for PCSE settings."
+        logger = logging.getLogger("pcse")
+        logger.warning(msg)
+
+    if user_home is None:
+        user_home = tempfile.gettempdir()
+
+    return user_home

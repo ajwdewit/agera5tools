@@ -14,8 +14,6 @@ from .util import variable_names, get_grid
 from .build import unpack_cds_download, convert_ncfiles_to_dataframe, df_to_csv, df_to_database
 from . import config
 
-selected_variables = [varname for varname, selected in config.variables.items() if selected]
-
 
 def find_days_in_database():
     """Finds the available days in the AgERA5 database by querying the time-series on the
@@ -106,6 +104,7 @@ def mirror(to_csv=True):
     :param to_csv: Flag indicating if a compressed CSV file should be written.
     """
     logger = logging.getLogger(__name__)
+    selected_variables = [varname for varname, selected in config.variables.items() if selected]
     days = find_days_to_update()
     if days:
         logger.info(f"Found following days for updating AgERA5: {days}")

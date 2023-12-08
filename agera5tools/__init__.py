@@ -16,7 +16,7 @@ import click
 
 from . import util
 
-__version__ = "2.0.10"
+__version__ = "2.0.11"
 
 def setup_logging(config, has_filesystem):
     """sets up the logging system for both logging to file and to console.
@@ -107,41 +107,45 @@ def read_config(mk_paths=True):
     :return:a DotMap object with the configuration
     """
 
-    default_config = True
+    has_config = False
     if "AGERA5TOOLS_CONFIG" in os.environ:
         agera5t_config = Path(os.environ["AGERA5TOOLS_CONFIG"]).absolute()
-        default_config = False
+        print(f"using config from {agera5t_config}")
+        has_config = True
     else:
         agera5t_config = Path(__file__).parent / "agera5tools.yaml"
-        msg = "No config found: Using default AGERA5TOOLS configuration!"
+        msg = "No config found, use `agera5tools init` to generate one!"
         click.echo(msg)
-    print(f"using config from {agera5t_config}")
 
-    try:
-        with open(agera5t_config) as fp:
-            r = yaml.safe_load(fp)
-    except Exception as e:
-        msg = f"Failed to read AGERA5Tools configuration from {agera5t_config}"
-        click.echo(msg)
-        sys.exit()
+    c = None
+    if has_config:
+        try:
+            with open(agera5t_config) as fp:
+                r = yaml.safe_load(fp)
+        except Exception as e:
+            msg = f"Failed to read AGERA5Tools configuration from {agera5t_config}"
+            click.echo(msg)
+            sys.exit()
 
-    c =  DotMap(r, _dynamic=False)
-    # Update config values into proper objects
-    c.region.boundingbox = util.BoundingBox(**c.region.boundingbox)
-    c.data_storage.netcdf_path = Path(c.data_storage.netcdf_path)
-    c.data_storage.tmp_path = Path(c.data_storage.tmp_path)
-    c.data_storage.csv_path = Path(c.data_storage.csv_path)
-    c.logging.log_path = Path(c.logging.log_path)
-    if mk_paths:
-        c.data_storage.tmp_path.mkdir(exist_ok=True, parents=True)
-        c.data_storage.csv_path.mkdir(exist_ok=True, parents=True)
-        c.logging.log_path.mkdir(exist_ok=True, parents=True)
+        c =  DotMap(r, _dynamic=False)
+        # Update config values into proper objects
+        c.region.boundingbox = util.BoundingBox(**c.region.boundingbox)
+        c.data_storage.netcdf_path = Path(c.data_storage.netcdf_path)
+        c.data_storage.tmp_path = Path(c.data_storage.tmp_path)
+        c.data_storage.csv_path = Path(c.data_storage.csv_path)
+        c.logging.log_path = Path(c.logging.log_path)
+        if mk_paths:
+            c.data_storage.netcdf_path.mkdir(exist_ok=True, parents=True)
+            c.data_storage.tmp_path.mkdir(exist_ok=True, parents=True)
+            c.data_storage.csv_path.mkdir(exist_ok=True, parents=True)
+            c.logging.log_path.mkdir(exist_ok=True, parents=True)
 
     return c
 
 has_filesystem = False if "READTHEDOCS" in os.environ else True
 config = read_config(mk_paths=has_filesystem)
-setup_logging(config, has_filesystem)
+if config:
+    setup_logging(config, has_filesystem)
 
 
 from .dump_grid import dump_grid

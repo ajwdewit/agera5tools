@@ -20,7 +20,6 @@ from .server import serve
 from . import config
 from . import __version__
 
-selected_variables = [varname for varname, selected in config.variables.items() if selected]
 
 @click.group()
 @click.version_option(version=__version__, prog_name="agera5tools")
@@ -52,6 +51,7 @@ def cmd_extract_point(longitude, latitude, startdate, enddate, output=None):
                     f"not within the boundingbox of this setup"))
         sys.exit()
     startdate, enddate = check_date_range(startdate, enddate)
+    selected_variables = [varname for varname, selected in config.variables.items() if selected]
     df = extract_point(selected_variables, point, startdate, enddate)
     if output is not None:
         output = Path(output)
@@ -132,8 +132,9 @@ def cmd_init():
      - Filling the grid table with the reference grid.
     """
     try:
-        init()
-        print(f"AgERA5tools successfully initialized!.")
+        success = init()
+        if success:
+            print(f"AgERA5tools successfully initialized!.")
     # except RuntimeError as e:
     #     print(f"AgERA5tools failed to initialize: {e}")
     except KeyboardInterrupt:

@@ -121,13 +121,15 @@ The first step is to run the `init` command. This command creates a default conf
 directory. Press enter to abort the init process in order to first modify the configuration file::
 
     $ agera5tools init
-    No config found: Using default AGERA5TOOLS configuration!
-    using config from /home/wit015/bin/miniconda3/envs/py38_a5t/lib/python3.8/site-packages/agera5tools/agera5tools.yaml
-    Successfully created agera5tools config file at: /data/agera5/agera5tools.yaml
+    No config found, use `agera5tools init` to generate one!
+    Successfully created agera5tools config file at:
+       /home/wit015/Sources/python/agera5tools/agera5tools.yaml
 
-    If this is the first time you run `init` you probably want to inspect/update your configuration
-    file first. Continue? [y/N]:
-    Aborted!
+    You just created a new configuration file time. Now carry out the following steps:
+    1) inspect/update your configuration file first and update the paths for data storage. Currently all paths point to your home folder, which may not be suitable.
+    2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the configuration file.
+    3) Next rerun `init` to finalize the initialization
+
 
 Now we need to inspect the `agera5tools.yaml` file with a text editor. We will go through the section of the
 configuration file below.
@@ -244,6 +246,15 @@ you probably already have a `.cdsapirc` file in your home folder and you can ski
       uid: <Your UID here>
       verify: 1
 
+.. warning::
+
+    Using the CDS API requires you to accept the Terms of Reference of the Copernicus Climate
+    Data Store. So if you just created an account on the CDS: First download a random AgERA5 file
+    through the CDS web interface, a screen will be shown where you can accept the ToR.
+    Afterward you can use agera5tools. Not accepting the ToR will give strange errors when
+    using agera5tools.
+
+
 Database settings
 .................
 
@@ -351,7 +362,7 @@ should be done as:
 
 .. code:: dos
 
-    $ export AGERA5TOOLS_CONFIG c:\data\agera5\agera5tools.yaml
+    $ set AGERA5TOOLS_CONFIG c:\data\agera5\agera5tools.yaml
 
 Now we can finalize the init proces by rerunning the `init` command:
 
@@ -481,7 +492,7 @@ on the number of days missing. Detailed information can be found in the log file
      - Days found for mirroring: 2023-01-04, 2023-01-05
      - Days successfully updated: 2023-01-04, 2023-01-05
 
-It may occur that days are not yet be available on the CDS. In that case `mirror` is not  ble to download the data and it will not be able to update the database. Unfortunately, the python CDS API is such that it will issue a large number of error messages to the screen which are hard to intercept::
+It may occur that days are not yet be available on the CDS. In that case `mirror` is not able to download the data and it will not be able to update the database. Unfortunately, the python CDS API is such that it will issue a large number of error messages to the screen which are hard to intercept::
 
     [ERROR] - Failed downloading Temperature_Air_2m_Max_Day_Time - 2023-01-19
     Traceback (most recent call last):
