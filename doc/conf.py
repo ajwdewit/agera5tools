@@ -35,7 +35,8 @@ release = version_short
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage',
-              'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'sphinx.ext.autosectionlabel']
+              'sphinx.ext.mathjax', 'sphinx.ext.viewcode', 'sphinx.ext.autosectionlabel',
+              'sphinx_rtd_theme']
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
