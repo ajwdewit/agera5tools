@@ -45,17 +45,19 @@ variable_names = {'Temperature_Air_2m_Mean_24h': dict(variable="2m_temperature",
                   }
 
 
-def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final", v="1.0"):
+def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final", version="1.0"):
     """Creates the AgERA5 variable filename for given variable and day
 
     :param meteo_variable_full_name: the full name of the meteo variable
     :param day: the date of the file
     :param agera5_dir: the path to the AgERA5 dataset
+    :param stat: the path to the AgERA5 dataset
+    :param version: the path to the AgERA5 dataset
     :return: the full path to the target filename
     """
     name_with_dashes = meteo_variable_full_name.replace("_", "-")
     sday = day.strftime("%Y%m%d")
-    nc_fname = f"{name_with_dashes}_C3S-glob-agric_AgERA5_{sday}_{stat}-v{v}.nc"
+    nc_fname = f"{name_with_dashes}_C3S-glob-agric_AgERA5_{sday}_{stat}-v{version}.nc"
     nc_fname = Path(agera5_dir) / str(day.year) / name_with_dashes / nc_fname
     return nc_fname
 

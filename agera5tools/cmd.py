@@ -51,8 +51,7 @@ def cmd_extract_point(longitude, latitude, startdate, enddate, output=None):
                     f"not within the boundingbox of this setup"))
         sys.exit()
     startdate, enddate = check_date_range(startdate, enddate)
-    selected_variables = [varname for varname, selected in config.variables.items() if selected]
-    df = extract_point(selected_variables, point, startdate, enddate)
+    df = extract_point(point, startdate, enddate)
     if output is not None:
         output = Path(output)
     write_dataframe(df, output)

@@ -55,7 +55,8 @@ def unpack_cds_download(download_details):
             myzip.extract(zipfname, config.data_storage.tmp_path)
             tmp_fname = config.data_storage.tmp_path / zipfname.filename
             day = parse_date_from_zipfname(zipfname)
-            nc_fname = create_target_fname(download_details["varname"], day, config.data_storage.netcdf_path)
+            nc_fname = create_target_fname(download_details["varname"], day, config.data_storage.netcdf_path,
+                                           version=config.misc.agera5_version)
             move_agera5_file(tmp_fname, nc_fname)
             nc_fnames_from_zip.append(nc_fname)
 
