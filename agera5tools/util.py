@@ -45,7 +45,7 @@ variable_names = {'Temperature_Air_2m_Mean_24h': dict(variable="2m_temperature",
                   }
 
 
-def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final", version="1.0"):
+def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final", version="1.1"):
     """Creates the AgERA5 variable filename for given variable and day
 
     :param meteo_variable_full_name: the full name of the meteo variable

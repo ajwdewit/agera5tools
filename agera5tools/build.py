@@ -242,7 +242,7 @@ def nc_files_available(varname, year, month):
     """
     ndays = number_days_in_month(year, month)
     days = [dt.date(year, month, d+1) for d in range(ndays)]
-    nc_fnames = [create_target_fname(varname, day, config.data_storage.netcdf_path) for day in days]
+    nc_fnames = [create_target_fname(varname, day, config.data_storage.netcdf_path, version=config.misc.agera5_version) for day in days]
     files_exist = [f.exists() for f in nc_fnames]
     return all(files_exist)
 
