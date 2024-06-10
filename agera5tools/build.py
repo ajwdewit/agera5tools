@@ -210,27 +210,22 @@ def df_to_database(df, descriptor):
         logger.error(f"Failed inserting AgERA5 data for {descriptor}: duplicate rows!")
 
 
-def df_to_csv(df, descriptor, filemode="w"):
+def df_to_csv(df, csv_fname, filemode="w"):
     """Write dataframe to a compressed CSV file
 
     :param df:  a dataframe with AgERA5 data
-    :param descriptor: a descriptor for this set of data, usually year-month ("2000-01") or a date ("2000-01-01")
+    :param csv_fname: the name of the file to write to
     :param filemode: the way the file should be opened: either "w" (write) or "a" (append)
-    :return: the name of the CSV file where data is written.
     """
     logger = logging.getLogger(__name__)
-    csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{descriptor}.csv.gz"
-    if csv_fname.exists():
-        logger.info(f"Skipped writing output for {descriptor} to CSV: file already exists!")
-        return csv_fname
 
     hdr = True if filemode=="w" else False
     try:
         with gzip.open(csv_fname, filemode, compresslevel=5) as fp:
             fp.write(df.to_csv(None, header=hdr, index=False, date_format="%Y-%m-%d").encode("utf-8"))
-        logger.info(f"Written output for {descriptor} to CSV: {csv_fname}")
+        logger.info(f"Written output to CSV: {csv_fname}")
     except Exception as e:
-        logger.exception(f"Failed writing CSV file with AgERA5 data for {descriptor}).")
+        logger.exception(f"Failed writing CSV file with AgERA5 data for {csv_fname}).")
 
     return csv_fname
 
@@ -322,19 +317,25 @@ def build(to_database=True, to_csv=False):
             logger.info(f"Skipping download, NetCDF files already exist.")
 
     for year, month in build_month_years:
+        csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{year}-{month:02}.csv.gz"
+        csv_fname_tmp = f"{csv_fname}.{uuid4()}.tmp"
+        CSV_not_yet_written = True if not csv_fname.exists() else False
+
         for day in dates_in_month(year, month):
             nc_files = get_nc_filenames(selected_variables, year, month, day)
             df = convert_ncfiles_to_dataframe(nc_files)
             if to_database:
                 df_to_database(df, descriptor=f"{day}")
-            if to_csv:
+            if to_csv and CSV_not_yet_written:
                 fm = "w" if day.day == 1 else "a"  # Start new file on 1st day of the month, else append
-                df_to_csv(df, descriptor=f"{year}-{month:02}", filemode=fm)
+                df_to_csv(df, csv_fname_tmp, filemode=fm)
 
             # Delete NetCDF files if required
             if config.data_storage.keep_netcdf is False:
                 [f.unlink() for f in nc_files]
 
+        # Move tmp CSV file to final name
+        csv_fname_tmp.rename(csv_fname)
 
 
 if __name__ == "__main__":
