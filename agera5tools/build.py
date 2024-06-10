@@ -220,7 +220,11 @@ def df_to_csv(df, descriptor, filemode="w"):
     """
     logger = logging.getLogger(__name__)
     csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{descriptor}.csv.gz"
-    hdr = False if csv_fname.exists() else True
+    if csv_fname.exists():
+        logger.info(f"Skipped writing output for {descriptor} to CSV: file already exists!")
+        return csv_fname
+
+    hdr = True if filemode=="w" else False
     try:
         with gzip.open(csv_fname, filemode, compresslevel=5) as fp:
             fp.write(df.to_csv(None, header=hdr, index=False, date_format="%Y-%m-%d").encode("utf-8"))
