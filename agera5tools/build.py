@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) December 2022, Wageningen Environmental Research
 # Allard de Wit (allard.dewit@wur.nl)
+import os
 import logging
 import shutil
 import gzip
@@ -286,21 +287,25 @@ def get_nc_filenames(varnames, year, month, day=None, check=True):
 
     return nc_fnames
 
-def build(to_database=True, to_csv=False):
+def build(year_month=None, to_database=True, to_csv=False):
     """Builds the AgERA5tools database.
 
     This step is useful to initially populate the database with data because the build step downloads the data
     in monthly chunks with is much more efficient. When the build step is finished, the `mirror` command can be
     used to incrementally update the AgERA5 database.
 
+    :param year_month: Only process given (year, month) when given
     :param to_database: Flag indicating if results should be written to the database immediately
     :param to_csv: Flag indicating if a compressed CSV file should be written.
     """
     logger = logging.getLogger(__name__)
-    build_month_years = determine_build_range()
+    build_years_months = determine_build_range()
+    selected_years_months = build_years_months if year_month is None else year_month
     selected_variables = [varname for varname, selected in config.variables.items() if selected]
 
-    for year, month in build_month_years:
+    for year, month in build_years_months:
+        if (year, month) not in selected_years_months:
+            continue
         logger.info(f"Starting AgERA5 download for {year}-{month:02}")
         potential_downloads = [(v, year, month) for v in selected_variables]
         actual_downloads = [inp for inp in potential_downloads if not nc_files_available(*inp)]
@@ -316,17 +321,23 @@ def build(to_database=True, to_csv=False):
         else:
             logger.info(f"Skipping download, NetCDF files already exist.")
 
-    for year, month in build_month_years:
+    for year, month in build_years_months:
         csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{year}-{month:02}.csv.gz"
         csv_fname_tmp = f"{csv_fname}.{uuid4()}.tmp"
-        CSV_not_yet_written = True if not csv_fname.exists() else False
+        CSV_not_yet_written = False if csv_fname.exists() else True
 
         for day in dates_in_month(year, month):
             nc_files = get_nc_filenames(selected_variables, year, month, day)
-            df = convert_ncfiles_to_dataframe(nc_files)
+            df = None
+
             if to_database:
+                if df is None:
+                    df = convert_ncfiles_to_dataframe(nc_files)
                 df_to_database(df, descriptor=f"{day}")
+
             if to_csv and CSV_not_yet_written:
+                if df is None:
+                    df = convert_ncfiles_to_dataframe(nc_files)
                 fm = "w" if day.day == 1 else "a"  # Start new file on 1st day of the month, else append
                 df_to_csv(df, csv_fname_tmp, filemode=fm)
 
@@ -335,7 +346,8 @@ def build(to_database=True, to_csv=False):
                 [f.unlink() for f in nc_files]
 
         # Move tmp CSV file to final name
-        csv_fname_tmp.rename(csv_fname)
+        if CSV_not_yet_written:
+            os.rename(csv_fname_tmp, csv_fname)
 
 
 if __name__ == "__main__":

@@ -21,6 +21,20 @@ from . import config
 from . import __version__
 
 
+def year(y):
+    y = int(y)
+    if y not in list(range(1975, 2031)):
+        raise ValueError(f"Value {y} received, should be a year 1975..2030")
+    return y
+
+
+def month(m):
+    m = int(m)
+    if m not in list(range(1, 13)):
+        raise ValueError(f"Value {m} received, should be a month 1..12")
+    return m
+
+
 @click.group()
 @click.version_option(version=__version__, prog_name="agera5tools")
 def cli():
@@ -155,7 +169,29 @@ def cmd_build(to_database, to_csv):
                "use either --to_database or --to_csv")
         click.echo(msg)
 
-    build(to_database, to_csv)
+    build(None, to_database, to_csv)
+    msg = "Done building database, use the `mirror` command to keep the DB up to date"
+    click.echo(msg)
+
+
+@click.command("buildym")
+@click.argument('year', type=year)
+@click.argument('month', type=month)
+@click.option("-d", "--to_database", is_flag=True, flag_value=True,
+              help="Load AgERA5 data into the database")
+@click.option("-c", "--to_csv", is_flag=True, flag_value=True,
+              help="Write AgERA5 data to compressed CSV files.")
+def cmd_buildym(year, month, to_database, to_csv):
+    """Builds the AgERA5 database by bulk download from CDS for given year/month only
+    """
+    print(f"Export to database: {to_database}")
+    print(f"Export to CSV: {to_csv}")
+    if to_csv is False and to_database is False:
+        msg = ("Warning: Only NetCDF files will be updated, no tabular output will be written, "
+               "use either --to_database or --to_csv")
+        click.echo(msg)
+    year_month = [(year, month)]
+    build(year_month, to_database, to_csv)
     msg = "Done building database, use the `mirror` command to keep the DB up to date"
     click.echo(msg)
 
@@ -163,20 +199,25 @@ def cmd_build(to_database, to_csv):
 @click.command("mirror")
 @click.option("-c", "--to_csv", is_flag=True,
               help="Write AgERA5 data to compressed CSV files.")
-def cmd_mirror(to_csv=False):
+@click.option("-d", "--dry-run", is_flag=True,
+              help="Do not run mirror but only check for days to update.")
+def cmd_mirror(to_csv=False, dry_run=False):
     """Incrementally updates the AgERA5 database by daily downloads from the CDS.
     """
-    days, days_failed = mirror(to_csv)
+    days, days_failed = mirror(to_csv, dry_run)
     days_done = days.difference(days_failed)
     if not days:
         click.echo("Found no days to update the AgERA5 database for.")
     else:
-
-        msg = "Mirror found the following:\n" \
-              f" - Days found for mirroring: {day_fmt(days)}\n" \
-              f" - Days successfully updated: {day_fmt(days_done)}\n"
-        if days_failed:
-              msg += f" - Days failed to update: {day_fmt(days_failed)}, see log for details\n"
+        if dry_run:
+            msg = "Mirror found the following:\n" \
+                  f" - Days ({len(days)}) found for mirroring: {day_fmt(days)}\n"
+        else:
+            msg = "Mirror found the following:\n" \
+                  f" - Days ({len(days)}) found for mirroring: {day_fmt(days)}\n" \
+                  f" - Days ({len(days_done)}) successfully updated: {day_fmt(days_done)}\n"
+            if days_failed:
+                  msg += f" - Days ({len(days_failed)})  failed to update: {day_fmt(days_failed)}, see log for details\n"
         click.echo(msg)
 
 
@@ -208,6 +249,7 @@ cli.add_command(cmd_clip)
 cli.add_command(cmd_dump_grid)
 cli.add_command(cmd_init)
 cli.add_command(cmd_build)
+cli.add_command(cmd_buildym)
 cli.add_command(cmd_mirror)
 cli.add_command(cmd_check)
 cli.add_command(cmd_serve)

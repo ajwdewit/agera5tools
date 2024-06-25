@@ -93,7 +93,7 @@ def download_one_day(input):
     return dict(day=day, varname=agera5_variable_name, download_fname=download_fname)
 
 
-def mirror(to_csv=True):
+def mirror(to_csv=True, dry_run=False):
     """mirrors the AgERA5tools database.
 
     This procedure will mirror the AgERA5 data at the Copernicus Climate Datastore. It will
@@ -111,6 +111,10 @@ def mirror(to_csv=True):
     else:
         logger.info(f"Found no days for updating AgERA5")
     days_failed = set()
+
+    if dry_run:  # Do not actually start processing
+        return days, days_failed
+
     for day in sorted(days):
         logger.info(f"Starting AgERA5 download for {day}")
         to_download = []

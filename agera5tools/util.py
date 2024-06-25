@@ -312,7 +312,7 @@ def day_fmt(days):
 
     """
     s = ""
-    for d in days:
+    for d in sorted(days):
         s += f"{d.strftime('%Y-%m-%d')}, "
     if s:
         s = s[:-2]
