@@ -322,6 +322,8 @@ def build(year_month=None, to_database=True, to_csv=False):
             logger.info(f"Skipping download, NetCDF files already exist.")
 
     for year, month in build_years_months:
+        if (year, month) not in selected_years_months:
+            continue
         csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{year}-{month:02}.csv.gz"
         csv_fname_tmp = f"{csv_fname}.{uuid4()}.tmp"
         CSV_not_yet_written = False if csv_fname.exists() else True
