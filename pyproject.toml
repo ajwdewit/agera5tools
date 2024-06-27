@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agera5tools"
-version = "2.0.15"
+version = "2.0.16"
 authors = [
   { name="Allard de Wit", email="allard.dewit@wur.nl" },
 ]
@@ -26,9 +26,8 @@ documentation = "https://agera5tools.readthedocs.io"
 
 [options]
 install_requires = [
-    "pandas == 1.4",
+    "pandas >= 1.4",
     "PyYAML >= 6.0",
-    "Pandas >= 1.3",
     "SQLAlchemy >= 1.4, <2.0",
     "PyYAML >= 6.0",
     "xarray >= 2022.12.0",

@@ -95,6 +95,7 @@ Moreover, there should be an `agera5tools` command in your current environment::
 
     Commands:
       build          Builds the AgERA5 database by bulk download from CDS
+      buildym        Builds the AgERA5 database by bulk download from CDS for...
       check          Checks the completeness of NetCDF files from which the...
       clip           Extracts a portion of agERA5 for the given bounding box...
       dump           Dump AgERA5 data for a given day to CSV, JSON or SQLite
@@ -417,6 +418,22 @@ you want to export to CSV files. Next you can load the database by using dedicat
 `pgloader`_ for postgress, `sqlloader`_ for ORACLE and MySQL `LOAD DATA` statements which take the CSV files as
 input.
 
+Alternatively, you can use the `buildym` to build the database for a specific year/month. This can be useful
+in certain situations where you want to force building of CSV files for database loading for a specific year/month.
+
+.. code:: bash
+
+    $ agera5tools buildym --help
+    Usage: agera5tools buildym [OPTIONS] YEAR MONTH
+
+      Builds the AgERA5 database by bulk download from CDS for given year/month
+      only
+
+    Options:
+      -d, --to_database  Load AgERA5 data into the database
+      -c, --to_csv       Write AgERA5 data to compressed CSV files.
+      --help             Show this message and exit.
+
 For the current example, we will run `build` and directly write data into the SQLite database:
 
 .. code:: bash
@@ -478,8 +495,9 @@ The `mirror` command will always update the database because mirror assumes that
       Incrementally updates the AgERA5 database by daily downloads from the CDS
 
     Options:
-      -c, --to_csv  Write AgERA5 data to compressed CSV files.
-      --help        Show this message and exit.
+      -c, --to_csv   Write AgERA5 data to compressed CSV files.
+      -d, --dry-run  Do not run mirror but only check for days to update.
+      --help         Show this message and exit.
 
 When running the `mirror` command on a database with a few days missing, it will update the database and report
 on the number of days missing. Detailed information can be found in the log files.
@@ -492,7 +510,9 @@ on the number of days missing. Detailed information can be found in the log file
      - Days found for mirroring: 2023-01-04, 2023-01-05
      - Days successfully updated: 2023-01-04, 2023-01-05
 
-It may occur that days are not yet be available on the CDS. In that case `mirror` is not able to download the data and it will not be able to update the database. Unfortunately, the python CDS API is such that it will issue a large number of error messages to the screen which are hard to intercept::
+It may occur that days are not yet be available on the CDS. In that case `mirror` is not able to download the data and
+it will not be able to update the database. Unfortunately, the python CDS API is such that it will issue a large number
+of error messages to the screen which are hard to intercept::
 
     [ERROR] - Failed downloading Temperature_Air_2m_Max_Day_Time - 2023-01-19
     Traceback (most recent call last):
@@ -1120,4 +1140,8 @@ Based on the summary results, we can see that loading was successful and we have
 Bulk loading AgERA5 with Oracle
 -------------------------------
 
-Bulk loading of AgERA5 data into Oracle can be done with the `SQL*Loader <https://docs.oracle.com/en/database/oracle/oracle-database/19/sutil/oracle-sql-loader.html>`_ utility. Since I do not have an Oracle database readily available, I cannot demonstrate how this should be done exactly. However, it has many similarites with `pgloader` as the `SQL*Loader` tool also requires a control file that describes the inputs and output target.
+Bulk loading of AgERA5 data into Oracle can be done with the
+`SQL*Loader <https://docs.oracle.com/en/database/oracle/oracle-database/19/sutil/oracle-sql-loader.html>`_ utility.
+Since I do not have an Oracle database readily available, I cannot demonstrate how this should be done exactly.
+However, it has many similarites with `pgloader` as the `SQL*Loader` tool also requires a control file that describes
+the inputs and output target.
