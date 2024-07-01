@@ -159,17 +159,20 @@ def cmd_init():
               help="Load AgERA5 data into the database")
 @click.option("-c", "--to_csv", is_flag=True, flag_value=True,
               help="Write AgERA5 data to compressed CSV files.")
-def cmd_build(to_database, to_csv):
+@click.option("-p", "--to_parquet", is_flag=True, flag_value=True,
+              help="Write AgERA5 data to parquet files.")
+def cmd_build(to_database, to_csv, to_parquet):
     """Builds the AgERA5 database by bulk download from CDS
     """
     print(f"Export to database: {to_database}")
     print(f"Export to CSV: {to_csv}")
-    if to_csv is False and to_database is False:
+    print(f"Export to Parquet: {to_parquet}")
+    if to_csv is False and to_database is False and to_parquet is False:
         msg = ("Warning: Only NetCDF files will be updated, no tabular output will be written, "
-               "use either --to_database or --to_csv")
+               "use either --to_database, --to_csv or --to_parquet")
         click.echo(msg)
 
-    build(None, to_database, to_csv)
+    build(None, to_database, to_csv, to_parquet)
     msg = "Done building database, use the `mirror` command to keep the DB up to date"
     click.echo(msg)
 
@@ -181,17 +184,20 @@ def cmd_build(to_database, to_csv):
               help="Load AgERA5 data into the database")
 @click.option("-c", "--to_csv", is_flag=True, flag_value=True,
               help="Write AgERA5 data to compressed CSV files.")
-def cmd_buildym(year, month, to_database, to_csv):
+@click.option("-p", "--to_parquet", is_flag=True, flag_value=True,
+              help="Write AgERA5 data to parquet files.")
+def cmd_buildym(year, month, to_database, to_csv, to_parquet):
     """Builds the AgERA5 database by bulk download from CDS for given year/month only
     """
     print(f"Export to database: {to_database}")
     print(f"Export to CSV: {to_csv}")
-    if to_csv is False and to_database is False:
+    print(f"Export to Parquet: {to_parquet}")
+    if to_csv is False and to_database is False and to_parquet is False:
         msg = ("Warning: Only NetCDF files will be updated, no tabular output will be written, "
-               "use either --to_database or --to_csv")
+               "use either --to_database, --to_csv or --to_parquet")
         click.echo(msg)
     year_month = [(year, month)]
-    build(year_month, to_database, to_csv)
+    build(year_month, to_database, to_csv, to_parquet)
     msg = "Done building database, use the `mirror` command to keep the DB up to date"
     click.echo(msg)
 
