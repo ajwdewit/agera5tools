@@ -67,6 +67,7 @@ data_storage:
   keep_netcdf: yes
   tmp_path: /USERHOME/agera5/tmp
   csv_path: /USERHOME/agera5/csv
+  parquet_path: /USERHOME/agera5/parquet
 variables:
   # Select which variables should be downloaded from the CDS
   Temperature_Air_2m_Mean_24h: yes

@@ -16,6 +16,8 @@ from itertools import product
 import cdsapi
 import xarray as xr
 import sqlalchemy as sa
+import pandas as pd
+import numpy as np
 
 from .util import number_days_in_month, variable_names, create_target_fname, last_day_in_month, \
     add_grid, convert_to_celsius, chunker
@@ -287,7 +289,7 @@ def get_nc_filenames(varnames, year, month, day=None, check=True):
 
     return nc_fnames
 
-def build(year_month=None, to_database=True, to_csv=False):
+def build(year_month=None, to_database=True, to_csv=False, to_parquet=False):
     """Builds the AgERA5tools database.
 
     This step is useful to initially populate the database with data because the build step downloads the data
@@ -297,6 +299,7 @@ def build(year_month=None, to_database=True, to_csv=False):
     :param year_month: Only process given (year, month) when given
     :param to_database: Flag indicating if results should be written to the database immediately
     :param to_csv: Flag indicating if a compressed CSV file should be written.
+    :param to_parquet: Flag indicating if a Apache Parquet files should be written.
     """
     logger = logging.getLogger(__name__)
     build_years_months = determine_build_range()
@@ -324,9 +327,15 @@ def build(year_month=None, to_database=True, to_csv=False):
     for year, month in build_years_months:
         if (year, month) not in selected_years_months:
             continue
+        # CSV file name
         csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{year}-{month:02}.csv.gz"
         csv_fname_tmp = f"{csv_fname}.{uuid4()}.tmp"
         CSV_not_yet_written = False if csv_fname.exists() else True
+
+        # Parquet file name
+        parq_fname = config.data_storage.parquet_path / f"weather_grid_agera5_{year}-{month:02}.parquet"
+        parq_fname_tmp = f"{parq_fname}.{uuid4()}.tmp"
+        PARQ_not_yet_written = False if parq_fname.exists() else True
 
         for day in dates_in_month(year, month):
             nc_files = get_nc_filenames(selected_variables, year, month, day)
@@ -343,13 +352,28 @@ def build(year_month=None, to_database=True, to_csv=False):
                 fm = "w" if day.day == 1 else "a"  # Start new file on 1st day of the month, else append
                 df_to_csv(df, csv_fname_tmp, filemode=fm)
 
+            if to_parquet and PARQ_not_yet_written:
+                if df is None:
+                    df = convert_ncfiles_to_dataframe(nc_files)
+                df["day"] = pd.to_datetime(df.day)
+                df["idgrid"] = df.idgrid.astype(np.int32)
+                if "solar_radiation_flux" in df.columns:
+                    df["solar_radiation_flux"] = df.solar_radiation_flux.astype(np.int32)
+                append = False if day.day == 1 else True  # Start new file on 1st day of the month, else append
+                df.to_parquet(parq_fname_tmp, engine="fastparquet", append=append, index=False)
+
             # Delete NetCDF files if required
             if config.data_storage.keep_netcdf is False:
                 [f.unlink() for f in nc_files]
 
         # Move tmp CSV file to final name
-        if CSV_not_yet_written:
+        if CSV_not_yet_written and to_csv:
             os.rename(csv_fname_tmp, csv_fname)
+
+        if PARQ_not_yet_written and to_parquet:
+            os.rename(parq_fname_tmp, parq_fname)
+
+
 
 
 if __name__ == "__main__":
