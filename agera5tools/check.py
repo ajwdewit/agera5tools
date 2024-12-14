@@ -34,7 +34,7 @@ def check():
     selected_variables = [varname for varname, selected in config.variables.items() if selected]
     missing_nc_fnames = []
     for varname, day in product(selected_variables, days):
-        f = create_target_fname(varname, day, config.data_storage.netcdf_path)
+        f = create_target_fname(varname, day, agera5_dir=config.data_storage.netcdf_path, v=config.misc.agera5_version)
         if not f.exists():
             missing_nc_fnames.append(f)
 

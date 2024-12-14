@@ -27,8 +27,7 @@ def set_CDSAPI_credentials():
     cdsapirc = home / ".cdsapirc"
     if not cdsapirc.exists():
         credentials = (f"url: {config.cdsapi.url}\n"
-                       f"key: {config.cdsapi.uid}:{config.cdsapi.key}\n"
-                       "verify: 1\n")
+                       f"key: {config.cdsapi.key}\n")
         with open(cdsapirc, "w") as fp:
             fp.write(credentials)
         click.echo(f"Succesfully created .cdsapirc file at {cdsapirc}")
@@ -64,7 +63,7 @@ def fill_grid_table():
           (df.longitude >= config.region.boundingbox.lon_min) &
           (df.longitude <= config.region.boundingbox.lon_max))
     df = df[ix]
-    df = (df.drop(columns=["lat", "lon", "land_fraction"])
+    df = (df.drop(columns=["ll_latitude", "ll_longitude", "land_fraction"])
             .rename(columns={"idgrid_era5": "idgrid"}))
 
     engine = sa.create_engine(config.database.dsn)
@@ -74,37 +73,37 @@ def fill_grid_table():
 
 def build_database():
     engine = sa.create_engine(config.database.dsn)
-    meta = sa.MetaData(engine)
+    with engine.connect() as DBconn:
+        meta = sa.MetaData()
 
-    # Build table with weather data
-    tbl1 = sa.Table(config.database.agera5_table_name, meta,
-                   sa.Column("idgrid", sa.Integer, primary_key=True),
-                   sa.Column("day", sa.Date, primary_key=True))
-    for variable, selected in config.variables.items():
-        if selected:
-            tbl1.append_column(sa.Column(variable.lower(), sa.Float))
+        # Build table with weather data
+        tbl1 = sa.Table(config.database.agera5_table_name, meta,
+                       sa.Column("idgrid", sa.Integer, primary_key=True, autoincrement=False),
+                       sa.Column("day", sa.Date, primary_key=True))
+        for variable, selected in config.variables.items():
+            if selected:
+                tbl1.append_column(sa.Column(variable.lower(), sa.Float))
 
-    # Build table with grid definition
-    tbl2 = sa.Table(config.database.grid_table_name, meta,
-                   sa.Column("idgrid", sa.Integer, primary_key=True),
-                   sa.Column("longitude", sa.Float),
-                   sa.Column("latitude", sa.Float),
-                   sa.Column("elevation", sa.Float,),
-                   )
-    try:
-        tbl2.create()
-        tbl1.create()
-        click.echo(f"Succesfully created tables on DSN={engine}")
-    except sa.exc.OperationalError as e:
-        click.echo("Failed creating tables, do they already exist?")
-        r = click.confirm(f"Continue with initializing?")
-        if not r:
-            sys.exit()
+        # Build table with grid definition
+        tbl2 = sa.Table(config.database.grid_table_name, meta,
+                       sa.Column("idgrid", sa.Integer, primary_key=True, autoincrement=False),
+                       sa.Column("longitude", sa.Float),
+                       sa.Column("latitude", sa.Float),
+                       sa.Column("elevation", sa.Float,),
+                       )
+        try:
+            meta.create_all(engine)
+            click.echo(f"Succesfully created tables on DSN={engine}")
+        except sa.exc.OperationalError as e:
+            click.echo("Failed creating tables, do they already exist?")
+            r = click.confirm(f"Continue with initializing?")
+            if not r:
+                sys.exit()
 
 def init():
     create_AgERA5_config()
     click.confirm(("\nIf this is the first time you run `init` you probably want to abort now and "
-                   "inspect/update your configuration file first."), abort=True)
+                   "inspect/update your configuration file first. Continue?"), abort=True)
     set_CDSAPI_credentials()
     build_database()
     fill_grid_table()

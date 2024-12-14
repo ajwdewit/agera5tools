@@ -15,12 +15,13 @@ from .util import Point, check_date, get_grid
 def fetch_grid_agera5_properties(engine, idgrid):
     """Retrieves latitude, longitude, elevation from "grid" table and
     assigns them to self.latitude, self.longitude, self.elevation."""
-    metadata = sa.MetaData(engine)
-    tg = Table(config.database.grid_table_name, metadata, autoload=True)
-    sc = select([tg.c.latitude, tg.c.longitude, tg.c.elevation],
-                tg.c.idgrid == idgrid).execute()
-    row = sc.fetchone()
-    sc.close()
+    metadata = sa.MetaData()
+    metadata.reflect(engine)
+    tg = Table(config.database.grid_table_name, metadata, autoload_with=engine)
+    sc = select(tg).where(tg.c.idgrid == idgrid)
+    with engine.connect() as DBconn:
+        cursor = DBconn.execute(sc)
+        row = cursor.fetchone()
     if row is None:
         msg = "No land grid at this location or outside region definition!"
         raise RuntimeError(msg)
@@ -35,11 +36,11 @@ def fetch_grid_agera5_properties(engine, idgrid):
 def fetch_agera5_weather_from_db(engine, idgrid, startdate, enddate):
     """Retrieves the meteo data from table "grid_weather".
     """
-    metadata = sa.MetaData(engine)
-    gw = Table(config.database.agera5_table_name, metadata, autoload=True)
-    sel = select([gw], and_(gw.c.idgrid == idgrid,
-                            gw.c.day >= startdate,
-                            gw.c.day <= enddate))
+    metadata = sa.MetaData()
+    gw = Table(config.database.agera5_table_name, metadata, autoload_with=engine)
+    sel = select(gw).where(and_(gw.c.idgrid == idgrid,
+                                gw.c.day >= startdate,
+                                gw.c.day <= enddate))
     df = pd.read_sql(sel, engine)
     df.index = pd.to_datetime(df.day)
 

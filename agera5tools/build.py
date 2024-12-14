@@ -12,6 +12,7 @@ from itertools import product
 
 import cdsapi
 import sqlalchemy as sa
+import duckdb
 import xarray as xr
 
 from .util import days_in_month, variable_names, create_target_fname, last_day_in_month, add_grid, convert_to_celsius
@@ -49,7 +50,9 @@ def unpack_cds_download(download_details):
             myzip.extract(zipfname, config.data_storage.tmp_path)
             tmp_fname = config.data_storage.tmp_path / zipfname.filename
             day = parse_date_from_zipfname(zipfname)
-            nc_fname = create_target_fname(download_details["varname"], day, config.data_storage.netcdf_path)
+            nc_fname = create_target_fname(download_details["varname"], day,
+                                           agera5_dir=config.data_storage.netcdf_path,
+                                           v=config.misc.agera5_version)
             move_agera5_file(tmp_fname, nc_fname)
             nc_fnames_from_zip.append(nc_fname)
 
@@ -79,6 +82,7 @@ def download_one_month(input):
             'month': f'{month:02}',
             'day': [f"{s+1:02}" for s in range(ndays_in_month)],
             'area': config.region.boundingbox.get_cds_bbox(),
+            'version': str(config.misc.agera5_version).replace(".","_")
         }
     cds_query.update(cds_variable_details)
 
@@ -175,13 +179,20 @@ def df_to_database(df, descriptor):
     :param descriptor: a descriptor for this set of data, usually year-month ("2000-01") or a date ("2000-01-01")
     """
     logger = logging.getLogger(__name__)
-    engine = sa.create_engine(config.database.dsn)
     try:
-        with engine.begin() as DBconn:
-            df.to_sql(config.database.agera5_table_name, DBconn, if_exists="append", index=False)
-            logger.info(f"Written AgERA5 data for {descriptor} to database.")
+        if config.database.dsn.startswith("duckdb"):
+            fname_duckdb = config.database.dsn[9:]
+            with duckdb.connect(fname_duckdb) as DBconn:
+                DBconn.sql(f"INSERT INTO {config.database.agera5_table_name} BY NAME SELECT * FROM df")
+        else:
+            engine = sa.create_engine(config.database.dsn)
+            with engine.begin() as DBconn:
+                df.to_sql(config.database.agera5_table_name, DBconn, if_exists="append", index=False)
+        logger.info(f"Written AgERA5 data for {descriptor} to database.")
     except sa.exc.IntegrityError as e:
         logger.error(f"Failed inserting AgERA5 data for {descriptor}: duplicate rows!")
+    except Exception as e:
+        logger.error(f"Failed inserting AgERA5 data for {descriptor}: {e}!")
 
 
 def df_to_csv(df, descriptor):
@@ -214,7 +225,10 @@ def nc_files_available(varname, year, month):
     """
     ndays = days_in_month(year, month)
     days = [dt.date(year, month, d+1) for d in range(ndays)]
-    nc_fnames = [create_target_fname(varname, day, config.data_storage.netcdf_path) for day in days]
+    nc_fnames = [create_target_fname(varname, day,
+                                     agera5_dir=config.data_storage.netcdf_path,
+                                     v=config.misc.agera5_version)
+                 for day in days]
     files_exist = [f.exists() for f in nc_fnames]
     return all(files_exist)
 
@@ -233,7 +247,7 @@ def get_nc_filenames(varnames, year, month, check=True):
     days = [dt.date(year, month, d+1) for d in range(ndays)]
     nc_fnames = []
     for varname, day in product(varnames, days):
-        fname = create_target_fname(varname, day, config.data_storage.netcdf_path)
+        fname = create_target_fname(varname, day, agera5_dir=config.data_storage.netcdf_path, v=config.misc.agera5_version)
         nc_fnames.append(fname)
 
     if check:

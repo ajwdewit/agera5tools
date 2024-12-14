@@ -14,7 +14,6 @@ import yaml
 from dotmap import DotMap
 import click
 
-from . import util
 
 __version__ = "2.0.0"
 
@@ -75,6 +74,7 @@ def read_config():
 
     :return:a DotMap object with the configuration
     """
+    from .util import BoundingBox
 
     default_config = True
     if "AGERA5TOOLS_CONFIG" in os.environ:
@@ -96,14 +96,14 @@ def read_config():
 
     c =  DotMap(r, _dynamic=False)
     # Update config values into proper objects
-    c.region.boundingbox = util.BoundingBox(**c.region.boundingbox)
+    c.region.boundingbox = BoundingBox(**c.region.boundingbox)
     c.data_storage.netcdf_path = Path(c.data_storage.netcdf_path)
     c.data_storage.tmp_path = Path(c.data_storage.tmp_path)
     c.data_storage.csv_path = Path(c.data_storage.csv_path)
     c.logging.log_path = Path(c.logging.log_path)
-    c.data_storage.tmp_path.mkdir(exist_ok=True)
-    c.data_storage.csv_path.mkdir(exist_ok=True)
-    c.logging.log_path.mkdir(exist_ok=True)
+    c.data_storage.tmp_path.mkdir(exist_ok=True, parents=True)
+    c.data_storage.csv_path.mkdir(exist_ok=True, parents=True)
+    c.logging.log_path.mkdir(exist_ok=True, parents=True)
 
     return c
 
@@ -111,7 +111,7 @@ def read_config():
 config = read_config()
 setup_logging(config)
 
-
+from . import util
 from .dump_grid import dump_grid
 from .dump_clip import dump, clip
 from .extract_point import extract_point
