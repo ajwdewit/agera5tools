@@ -26,7 +26,7 @@ def find_days_in_database():
                       config.database.grid_table_name, config.misc.grid_search_radius)
     meta = sa.MetaData()
     tbl = sa.Table(config.database.agera5_table_name, meta, autoload_width=engine)
-    s = sa.select([tbl.c.day]).where(tbl.c.idgrid==idgrid)
+    s = sa.select(tbl.c.day).where(tbl.c.idgrid==idgrid)
     with engine.connect() as DBconn:
         cursor = DBconn.execute(s)
         rows = cursor.fetchall()
