@@ -22,12 +22,14 @@ def find_days_in_database():
     :return: A set of date objects present in the database
     """
     engine = sa.create_engine(config.database.dsn)
-    meta = sa.MetaData(engine)
     idgrid = get_grid(engine, config.misc.reference_point.lon, config.misc.reference_point.lat,
                       config.database.grid_table_name, config.misc.grid_search_radius)
-    tbl = sa.Table(config.database.agera5_table_name, meta, autoload=True)
+    meta = sa.MetaData()
+    tbl = sa.Table(config.database.agera5_table_name, meta, autoload_width=engine)
     s = sa.select([tbl.c.day]).where(tbl.c.idgrid==idgrid)
-    rows = s.execute().fetchall()
+    with engine.connect() as DBconn:
+        cursor = DBconn.execute(s)
+        rows = cursor.fetchall()
     dates = {d for d, in rows}
     return dates
 
