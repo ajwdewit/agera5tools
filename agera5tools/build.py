@@ -59,7 +59,7 @@ def unpack_cds_download(download_details):
             day = parse_date_from_zipfname(zipfname)
             nc_fname = create_target_fname(download_details["varname"], day,
                                            agera5_dir=config.data_storage.netcdf_path,
-                                           v=config.misc.agera5_version)
+                                           version=config.misc.agera5_version)
             move_agera5_file(tmp_fname, nc_fname)
             nc_fnames_from_zip.append(nc_fname)
 
@@ -281,7 +281,7 @@ def get_nc_filenames(varnames, year, month, day=None, check=True):
         days = [day]
     nc_fnames = []
     for varname, day in product(varnames, days):
-        fname = create_target_fname(varname, day, agera5_dir=config.data_storage.netcdf_path, v=config.misc.agera5_version)
+        fname = create_target_fname(varname, day, agera5_dir=config.data_storage.netcdf_path, version=config.misc.agera5_version)
         nc_fnames.append(fname)
 
     if check:

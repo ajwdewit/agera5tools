@@ -23,7 +23,7 @@ def extract_point(point, startday, endday):
     for day in pd.date_range(startday, endday):
         fnames = [create_target_fname(v, day,
                                       agera5_dir=config.data_storage.netcdf_path,
-                                      v=config.misc.agera5_version)
+                                      version=config.misc.agera5_version)
                   for v in selected_variables]
         ds = xr.open_mfdataset(fnames)
         pnt_data = ds.sel(lon=point.longitude, lat=point.latitude, method="nearest")

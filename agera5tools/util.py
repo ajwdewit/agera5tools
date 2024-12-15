@@ -70,7 +70,7 @@ def create_agera5_fnames(agera5_dir, var_names, day):
     for var_name in var_names:
         fname = create_target_fname(var_name, day,
                                     agera5_dir=config.data_storage.netcdf_path,
-                                    v=config.misc.agera5_version)
+                                    version=config.misc.agera5_version)
         if not fname.exists():
             msg = f"Cannot find file: {fname}"
             if CMD_MODE:

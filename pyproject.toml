@@ -6,8 +6,8 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-dynamic = ["version"]
 name = "agera5tools"
+version = "2.1.0"
 authors = [
   { name="Allard de Wit", email="allard.dewit@wur.nl" },
 ]
