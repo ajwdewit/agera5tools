@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agera5tools"
-version = "2.0.0"
+version = "2.0.16"
 authors = [
   { name="Allard de Wit", email="allard.dewit@wur.nl" },
 ]
@@ -21,7 +21,8 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/ajwdewit/agera5tools"
+Homepage = "https://github.com/ajwdewit/agera5tools"
+documentation = "https://agera5tools.readthedocs.io"
 
 [options]
 install_requires = [

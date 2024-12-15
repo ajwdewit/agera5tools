@@ -34,7 +34,7 @@ def parse_inputs(params):
 
 def get_JSON_response(func, params, name):
     logger = logging.getLogger(name)
-    inputs = "- No inputs parsed yet -"
+    inputs = "No inputs parsed yet"
     try:
         inputs = parse_inputs(params)
         r = {"success": True,

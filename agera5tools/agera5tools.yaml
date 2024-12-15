@@ -11,9 +11,9 @@
 version: 0.1
 logging:
   # Details for the log. Log levels follow conventions of the python logging framework.
-  log_path: /home/allard/tmp/agera5/logs
+  log_path: /USERHOME/agera5/logs
   log_fname: agera5tools.log
-  log_level_console: ERROR
+  log_level_console: WARNING
   log_level_file: INFO
 region:
   # This defines the characteristics of the region that you want to set up.
@@ -32,6 +32,7 @@ temporal_range:
   end_year: 2099
 misc:
   # Miscellaneous settings:
+  #  - agera5_version indicates the version to use. As of 2023-09-23 only v1.1 is available, v1.0 is deprecated
   #  - The reference point defines a point within the boundingbox that will be used by the mirror
   #    procedure to check the available dates in the database. This point should be on land!
   #  - grid_search_radius is the radius within which the nearest grid ID will be searched,
@@ -54,15 +55,16 @@ database:
   # SQLAlchemy database URL: https://docs.sqlalchemy.org/en/20/core/engines.html
   # Note that the URL may contain the database password in plain text which is a security
   # risk.
-  dsn: duckdb:////home/allard/tmp/agera5/agera5.ddb
+  dsn: duckdb:////USERHOME/agera5/agera5.ddb
   agera5_table_name: weather_grid_agera5
   grid_table_name: grid_agera5
+  chunk_size: 10000
 data_storage:
   # Storage path for NetCDF files, CSV files and temporary storage.
-  netcdf_path: /home/allard/tmp/agera5/ncfiles/
+  netcdf_path: /USERHOME/agera5/ncfiles/
   keep_netcdf: yes
-  tmp_path: /home/allard/tmp/agera5/tmp
-  csv_path: /home/allard/tmp/agera5/csv
+  tmp_path: /USERHOME/agera5/tmp
+  csv_path: /USERHOME/agera5/csv
 variables:
   # Select which variables should be downloaded from the CDS
   Temperature_Air_2m_Mean_24h: yes

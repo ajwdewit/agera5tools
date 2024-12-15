@@ -64,8 +64,9 @@ def get_agera5(latitude, longitude, startdate=None, enddate=None):
         raise RuntimeError(msg)
 
     engine = sa.create_engine(config.database.dsn)
-    print(f"Requesting data for lat {latitude:7.2f}, lon: {longitude:7.2f}")
-    idgrid_agera5 = get_grid(engine, pnt.longitude, pnt.latitude, config.misc.grid_search_radius)
+    print(f"Requesting data for lat {latitude:7.2f}, lon {longitude:7.2f}")
+    idgrid_agera5 = get_grid(engine, pnt.longitude, pnt.latitude,
+                             config.database.grid_table_name, config.misc.grid_search_radius)
     grid_agera5_properties = fetch_grid_agera5_properties(engine, idgrid_agera5)
     df_AgERA5 = fetch_agera5_weather_from_db(engine, idgrid_agera5, startdate, enddate)
 

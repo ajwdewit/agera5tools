@@ -8,7 +8,6 @@ import pandas as pd
 CMD_MODE = True if os.environ["CMD_MODE"] == "1" else False
 from .util import create_target_fname, convert_to_celsius
 from . import config
-selected_variables = [varname for varname, selected in config.variables.items() if selected]
 
 
 def extract_point(point, startday, endday):
@@ -19,7 +18,7 @@ def extract_point(point, startday, endday):
     :param endday: the end date
     :return: a dataframe with AgERA5 meteo variables
     """
-
+    selected_variables = [varname for varname, selected in config.variables.items() if selected]
     df_final = pd.DataFrame()
     for day in pd.date_range(startday, endday):
         fnames = [create_target_fname(v, day,

@@ -14,10 +14,11 @@ import yaml
 from dotmap import DotMap
 import click
 
+from . import util
 
-__version__ = "2.0.0"
+__version__ = "2.0.16"
 
-def setup_logging(config):
+def setup_logging(config, has_filesystem):
     """sets up the logging system for both logging to file and to console.
 
     file logging is based on a rotating file handler to avoid log files becoming very large.
@@ -64,10 +65,41 @@ def setup_logging(config):
             }
         }
 
-    logging.config.dictConfig(LOG_CONFIG)
+    LOG_CONFIG_RTD = \
+        {
+            'version': 1,
+            'disable_existing_loggers': True,
+            'formatters': {
+                'standard': {
+                    'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+                },
+                'brief': {
+                    'format': '[%(levelname)s] - %(message)s'
+                },
+            },
+            'handlers': {
+                'console': {
+                    'level': LOG_LEVEL_CONSOLE,
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'brief'
+                },
+            },
+            'root': {
+                'handlers': ['console'],
+                'propagate': True,
+                'level': 'NOTSET'
+            }
+        }
 
-def read_config():
+    if has_filesystem:
+        logging.config.dictConfig(LOG_CONFIG)
+    else:
+        logging.config.dictConfig(LOG_CONFIG_RTD)
+
+def read_config(mk_paths=True):
     """Reads the YAML file with configuration for AgERA5tools
+
+    if mk_paths is True, it will create the output directories.
 
     The config file is basically read as a dict. For convenience this converted into a DotMap object
     for easy access of config elements with dot access.
@@ -76,40 +108,45 @@ def read_config():
     """
     from .util import BoundingBox
 
-    default_config = True
+    has_config = False
     if "AGERA5TOOLS_CONFIG" in os.environ:
         agera5t_config = Path(os.environ["AGERA5TOOLS_CONFIG"]).absolute()
-        default_config = False
+        click.echo(f"using config from {agera5t_config}")
+        has_config = True
     else:
         agera5t_config = Path(__file__).parent / "agera5tools.yaml"
-        msg = "No config found: Using default AGERA5TOOLS configuration!"
+        msg = "No config found, use `agera5tools init` to generate one!"
         click.echo(msg)
-    print(f"using config from {agera5t_config}")
 
-    try:
-        with open(agera5t_config) as fp:
-            r = yaml.safe_load(fp)
-    except Exception as e:
-        msg = f"Failed to read AGERA5Tools configuration from {agera5t_config}"
-        click.echo(msg)
-        sys.exit()
+    c = None
+    if has_config:
+        try:
+            with open(agera5t_config) as fp:
+                r = yaml.safe_load(fp)
+        except Exception as e:
+            msg = f"Failed to read AGERA5Tools configuration from {agera5t_config}"
+            click.echo(msg)
+            sys.exit()
 
-    c =  DotMap(r, _dynamic=False)
-    # Update config values into proper objects
-    c.region.boundingbox = BoundingBox(**c.region.boundingbox)
-    c.data_storage.netcdf_path = Path(c.data_storage.netcdf_path)
-    c.data_storage.tmp_path = Path(c.data_storage.tmp_path)
-    c.data_storage.csv_path = Path(c.data_storage.csv_path)
-    c.logging.log_path = Path(c.logging.log_path)
-    c.data_storage.tmp_path.mkdir(exist_ok=True, parents=True)
-    c.data_storage.csv_path.mkdir(exist_ok=True, parents=True)
-    c.logging.log_path.mkdir(exist_ok=True, parents=True)
+        c =  DotMap(r, _dynamic=False)
+        # Update config values into proper objects
+        c.region.boundingbox = util.BoundingBox(**c.region.boundingbox)
+        c.data_storage.netcdf_path = Path(c.data_storage.netcdf_path)
+        c.data_storage.tmp_path = Path(c.data_storage.tmp_path)
+        c.data_storage.csv_path = Path(c.data_storage.csv_path)
+        c.logging.log_path = Path(c.logging.log_path)
+        if mk_paths:
+            c.data_storage.netcdf_path.mkdir(exist_ok=True, parents=True)
+            c.data_storage.tmp_path.mkdir(exist_ok=True, parents=True)
+            c.data_storage.csv_path.mkdir(exist_ok=True, parents=True)
+            c.logging.log_path.mkdir(exist_ok=True, parents=True)
 
     return c
 
-
-config = read_config()
-setup_logging(config)
+has_filesystem = False if "READTHEDOCS" in os.environ else True
+config = read_config(mk_paths=has_filesystem)
+if config:
+    setup_logging(config, has_filesystem)
 
 from . import util
 from .dump_grid import dump_grid

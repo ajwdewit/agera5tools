@@ -12,7 +12,6 @@ from . import config
 
 CMD_MODE = True if os.environ["CMD_MODE"] == "1" else False
 
-selected_variables = [varname for varname, selected in config.variables.items() if selected]
 
 def dump(day, bbox, add_gridid=False):
     """Converts the data for all AgERA5 variables for given day to a pandas dataframe.
@@ -31,6 +30,7 @@ def dump(day, bbox, add_gridid=False):
         else:
             raise RuntimeError(msg)
 
+    selected_variables = [varname for varname, selected in config.variables.items() if selected]
     fnames = create_agera5_fnames(config.data_storage.netcdf_path, selected_variables, day)
     ds = xr.open_mfdataset(fnames)
     ds = ds.sel(lon=slice(bbox.lon_min, bbox.lon_max), lat=slice(bbox.lat_max, bbox.lat_min))
@@ -48,7 +48,7 @@ def clip(day, bbox, add_gridid=False):
 
     :param day: the date for which to clip
     :param bbox: a BoundingBox object
-    :param add_idgrid: Add a grid ID (True) or not (False - default)
+    :param add_gridid: Add a grid ID (True) or not (False - default)
     :return: an xarray dataset containing all select AgERA5 variables for the given bounding box and day
     """
     in_bbox = config.region.boundingbox.region_in_bbox(bbox)
@@ -60,6 +60,7 @@ def clip(day, bbox, add_gridid=False):
         else:
             raise RuntimeError(msg)
 
+    selected_variables = [varname for varname, selected in config.variables.items() if selected]
     fnames = create_agera5_fnames(config.data_storage.netcdf_path, selected_variables, day)
     ds = xr.open_mfdataset(fnames)
     if add_gridid:

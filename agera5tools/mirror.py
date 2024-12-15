@@ -24,7 +24,7 @@ def find_days_in_database():
     engine = sa.create_engine(config.database.dsn)
     meta = sa.MetaData(engine)
     idgrid = get_grid(engine, config.misc.reference_point.lon, config.misc.reference_point.lat,
-                      config.misc.grid_search_radius)
+                      config.database.grid_table_name, config.misc.grid_search_radius)
     tbl = sa.Table(config.database.agera5_table_name, meta, autoload=True)
     s = sa.select([tbl.c.day]).where(tbl.c.idgrid==idgrid)
     rows = s.execute().fetchall()
@@ -66,6 +66,7 @@ def download_one_day(input):
     """
     agera5_variable_name, day = input
     cds_variable_details = copy.deepcopy(variable_names[agera5_variable_name])
+    version = str(config.misc.agera5_version).replace(".", "_")
 
     cds_query = {
             'format': 'zip',
@@ -74,21 +75,25 @@ def download_one_day(input):
             'month': f'{day.month:02}',
             'day': [f"{day.day:02}"],
             'area': config.region.boundingbox.get_cds_bbox(),
-        }
+            'version': f'{version}',
+    }
     cds_query.update(cds_variable_details)
 
     download_fname = config.data_storage.tmp_path / f"cds_download_{uuid4()}.zip"
     c = cdsapi.Client(quiet=True)
-    c.retrieve('sis-agrometeorological-indicators', cds_query, download_fname)
-
-    msg = f"Downloaded data for {agera5_variable_name} for {day} to {download_fname}."
     logger = logging.getLogger(__name__)
-    logger.debug(msg)
+    try:
+        c.retrieve('sis-agrometeorological-indicators', cds_query, download_fname)
+        msg = f"Downloaded data for {agera5_variable_name} for {day} to {download_fname}."
+        logger.debug(msg)
+    except Exception as e:
+        logger.exception(f"Failed downloading {agera5_variable_name} - {day}")
+        download_fname = None
 
     return dict(day=day, varname=agera5_variable_name, download_fname=download_fname)
 
 
-def mirror(to_csv=True):
+def mirror(to_csv=True, dry_run=False):
     """mirrors the AgERA5tools database.
 
     This procedure will mirror the AgERA5 data at the Copernicus Climate Datastore. It will
@@ -99,13 +104,22 @@ def mirror(to_csv=True):
     :param to_csv: Flag indicating if a compressed CSV file should be written.
     """
     logger = logging.getLogger(__name__)
+    selected_variables = [varname for varname, selected in config.variables.items() if selected]
     days = find_days_to_update()
+    if days:
+        logger.info(f"Found following days for updating AgERA5: {days}")
+    else:
+        logger.info(f"Found no days for updating AgERA5")
+    days_failed = set()
+
+    if dry_run:  # Do not actually start processing
+        return days, days_failed
+
     for day in sorted(days):
         logger.info(f"Starting AgERA5 download for {day}")
         to_download = []
-        for varname, selected in config.variables.items():
-            if selected:
-                to_download.append((varname, day))
+        for varname in selected_variables:
+            to_download.append((varname, day))
 
         logger.info(f"Starting concurrent CDS download of {len(to_download)} AgERA5 variables.")
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(to_download)) as executor:
@@ -116,6 +130,10 @@ def mirror(to_csv=True):
             ncfiles = unpack_cds_download(dset)
             downloaded_ncfiles.extend(ncfiles)
 
+        if len(downloaded_ncfiles) != len(selected_variables):
+            days_failed.add(day)
+            continue
+
         df = convert_ncfiles_to_dataframe(downloaded_ncfiles)
         df_to_database(df, descriptor=day)
         if to_csv:
@@ -125,7 +143,7 @@ def mirror(to_csv=True):
         if config.data_storage.keep_netcdf is False:
             [f.unlink() for f in downloaded_ncfiles]
 
-    return days
+    return days, days_failed
 
 if __name__ == "__main__":
     mirror()

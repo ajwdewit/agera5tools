@@ -139,7 +139,7 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=["xarray >= 2023.0", 'click>=7.0', "netcdf4>=1.5", "cdsapi>=0.7.5"],
+    install_requires=["xarray >= 0.16", 'click>=7.0', "netcdf4>=1.5"],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"

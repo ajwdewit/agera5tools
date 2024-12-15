@@ -4,6 +4,8 @@
 import logging
 from pathlib import Path
 import sys, os
+import platform
+import tempfile
 import datetime as dt
 import sqlite3
 import calendar
@@ -43,17 +45,19 @@ variable_names = {'Temperature_Air_2m_Mean_24h': dict(variable="2m_temperature",
                   }
 
 
-def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final", v="1.0"):
+def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final", version="1.1"):
     """Creates the AgERA5 variable filename for given variable and day
 
     :param meteo_variable_full_name: the full name of the meteo variable
     :param day: the date of the file
     :param agera5_dir: the path to the AgERA5 dataset
+    :param stat: the path to the AgERA5 dataset
+    :param version: the path to the AgERA5 dataset
     :return: the full path to the target filename
     """
     name_with_dashes = meteo_variable_full_name.replace("_", "-")
     sday = day.strftime("%Y%m%d")
-    nc_fname = f"{name_with_dashes}_C3S-glob-agric_AgERA5_{sday}_{stat}-v{v}.nc"
+    nc_fname = f"{name_with_dashes}_C3S-glob-agric_AgERA5_{sday}_{stat}-v{version}.nc"
     nc_fname = Path(agera5_dir) / str(day.year) / name_with_dashes / nc_fname
     return nc_fname
 
@@ -143,7 +147,7 @@ class Point:
                 raise
 
     def __str__(self):
-        return f"longitude: {self.longitude:6.2f}, latitude {self.latitude:5.2f}"
+        return f"longitude {self.longitude:6.2f} and/or latitude {self.latitude:5.2f}"
 
 
 def convert_to_celsius(df):
@@ -230,7 +234,8 @@ def add_grid(ds):
     return ds
 
 
-def days_in_month(year, month):
+def number_days_in_month(year, month):
+    """Returns the number of days in a month"""
 
     if month in (1, 3, 5, 7, 8, 10, 12):
         return 31
@@ -242,10 +247,10 @@ def days_in_month(year, month):
     return 30
 
 
-def get_grid(engine, lon, lat, search_radius):
+def get_grid(engine, lon, lat, grid_table_name, search_radius):
     sql = f""" 
     SELECT idgrid, longitude, latitude
-    FROM grid_agera5
+    FROM {grid_table_name}
     WHERE latitude < {lat + search_radius} AND latitude > {lat - search_radius} AND 
         longitude < {lon + search_radius} AND longitude > {lon - search_radius} 
     """
@@ -302,3 +307,56 @@ class BoundedFloat:
         if not (self.minlat < x < self.maxlat):
             raise ValueError(self.msg)
         return x
+
+
+def day_fmt(days):
+    """Properly formats a list or set of days:
+    yyyy-mm-dd, yyyy-mm-dd, ...
+
+    """
+    s = ""
+    for d in sorted(days):
+        s += f"{d.strftime('%Y-%m-%d')}, "
+    if s:
+        s = s[:-2]
+    else:
+        s = "N/A"
+
+    return s
+
+
+def chunker(seq, size):
+    """Returns a generator that divides seq in chunks of given size.
+
+    The last chunk can have less than size entities.
+
+    :param seq: The sequence to be chunked
+    :param size: The chunk size, should be > 0
+    :return: a generator that chunks the sequence
+    """
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+
+def get_user_home():
+    """A reasonable platform independent way to get the user home folder.
+    If PCSE runs under a system user then return the temp directory as returned
+    by tempfile.gettempdir()
+    """
+    user_home = None
+    if platform.system() == "Windows":
+        user = os.getenv("USERNAME")
+        if user is not None:
+            user_home = os.path.expanduser("~")
+    elif platform.system() == "Linux" or platform.system() == "Darwin":
+        user = os.getenv("USER")
+        if user is not None:
+            user_home = os.path.expanduser("~")
+    else:
+        msg = "Platform not recognized, using system temp directory for PCSE settings."
+        logger = logging.getLogger("pcse")
+        logger.warning(msg)
+
+    if user_home is None:
+        user_home = tempfile.gettempdir()
+
+    return user_home
