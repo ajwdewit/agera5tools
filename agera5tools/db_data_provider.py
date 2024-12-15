@@ -13,8 +13,10 @@ from .util import Point, check_date, get_grid
 
 
 def fetch_grid_agera5_properties(engine, idgrid):
-    """Retrieves latitude, longitude, elevation from "grid" table and
-    assigns them to self.latitude, self.longitude, self.elevation."""
+    """Retrieves latitude, longitude, elevation from "grid" table.
+
+    Assigns them to self.latitude, self.longitude, self.elevation.
+    """
     metadata = sa.MetaData()
     metadata.reflect(engine)
     tg = Table(config.database.grid_table_name, metadata, autoload_with=engine)
@@ -34,7 +36,7 @@ def fetch_grid_agera5_properties(engine, idgrid):
 
 
 def fetch_agera5_weather_from_db(engine, idgrid, startdate, enddate):
-    """Retrieves the meteo data from table "grid_weather".
+    """Retrieves the meteo data from table 'config.database.agera5_table_name'
     """
     metadata = sa.MetaData()
     gw = Table(config.database.agera5_table_name, metadata, autoload_with=engine)

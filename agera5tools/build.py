@@ -193,6 +193,7 @@ def df_to_database(df, descriptor):
     :param descriptor: a descriptor for this set of data, usually year-month ("2000-01") or a date ("2000-01-01")
     """
     logger = logging.getLogger(__name__)
+    t1 = time.time()
     try:
         if config.database.dsn.startswith("duckdb"):
             fname_duckdb = config.database.dsn[9:]
@@ -204,7 +205,6 @@ def df_to_database(df, descriptor):
             tbl = sa.Table(config.database.agera5_table_name, meta, autoload_with=engine)
             recs = df.to_dict(orient="records")
             nrecs_written = 0
-            t1 = time.time()
             with engine.begin() as DBconn:
                 ins = tbl.insert()
                 for chunk in chunker(recs, config.database.chunk_size):
