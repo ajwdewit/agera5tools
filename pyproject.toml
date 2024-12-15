@@ -47,4 +47,4 @@ documentation = "https://agera5tools.readthedocs.io"
 repository = "https://github.com/ajwdewit/agera5tools.git"
 
 [project.scripts]
-spam-cli = "agera5tools.cmd:cli"
+agera5tools = "agera5tools.cmd:cli"
