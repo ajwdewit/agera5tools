@@ -213,7 +213,7 @@ def df_to_database(df, descriptor):
                     msg = f"Written {nrecs_written} from total {len(recs)} records to database."
                     logger.info(msg)
         logger.info(f"Written AgERA5 data for {descriptor} to database in {time.time()-t1} seconds.")
-    except sa.exc.IntegrityError as e:
+    except (sa.exc.IntegrityError, duckdb.duckdb.ConstraintException) as e:
         logger.error(f"Failed inserting AgERA5 data for {descriptor}: duplicate rows!")
     except Exception as e:
         logger.error(f"Failed inserting AgERA5 data for {descriptor}: {e}!")

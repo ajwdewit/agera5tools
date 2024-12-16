@@ -18,7 +18,7 @@ description = "AgERA5 is a tool for handling AgERA5 data from the Copernicus Cli
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
-    "pandas>=2.2",
+    "pandas>=2.0",
     "PyYAML >= 6.0",
     "SQLAlchemy >= 2.0",
     "PyYAML >= 6.0",

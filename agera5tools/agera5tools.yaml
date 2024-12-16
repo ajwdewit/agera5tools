@@ -13,7 +13,7 @@ logging:
   # Details for the log. Log levels follow conventions of the python logging framework.
   log_path: /USERHOME/agera5/logs
   log_fname: agera5tools.log
-  log_level_console: WARNING
+  log_level_console: ERROR
   log_level_file: INFO
 region:
   # This defines the characteristics of the region that you want to set up.

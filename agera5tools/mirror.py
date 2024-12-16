@@ -8,6 +8,7 @@ import concurrent.futures
 import copy
 
 import cdsapi
+import pandas as pd
 import sqlalchemy as sa
 
 from .util import variable_names, get_grid
@@ -24,13 +25,10 @@ def find_days_in_database():
     engine = sa.create_engine(config.database.dsn)
     idgrid = get_grid(engine, config.misc.reference_point.lon, config.misc.reference_point.lat,
                       config.database.grid_table_name, config.misc.grid_search_radius)
-    meta = sa.MetaData()
-    tbl = sa.Table(config.database.agera5_table_name, meta, autoload_width=engine)
-    s = sa.select(tbl.c.day).where(tbl.c.idgrid==idgrid)
     with engine.connect() as DBconn:
-        cursor = DBconn.execute(s)
-        rows = cursor.fetchall()
-    dates = {d for d, in rows}
+        sql = f"select day from {config.database.agera5_table_name} where idgrid={idgrid}"
+        df = pd.read_sql_query(sql, DBconn)
+    dates = {d.day for d in df.itertuples()}
     return dates
 
 
@@ -139,7 +137,8 @@ def mirror(to_csv=True, dry_run=False):
         df = convert_ncfiles_to_dataframe(downloaded_ncfiles)
         df_to_database(df, descriptor=day)
         if to_csv:
-            df_to_csv(df, descriptor=day)
+            csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{day}.csv.gz"
+            df_to_csv(df, csv_fname)
 
         # Delete NetCDF files if required
         if config.data_storage.keep_netcdf is False:
