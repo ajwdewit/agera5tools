@@ -15,6 +15,8 @@ import time
 from pathlib import Path
 import logging
 from types import SimpleNamespace
+import warnings
+warnings.filterwarnings("ignore")
 
 import click
 import sqlalchemy as sa
@@ -64,23 +66,23 @@ def set_CDSAPI_credentials():
     if not cdsapirc.exists():
         with open(cdsapirc, "w") as fp:
             fp.write(credentials)
-        click.echo(f"Successfully created .cdsapirc file at {cdsapirc}")
+        click.echo(f"  Successfully created .cdsapirc file at {cdsapirc}")
     else:
-        click.echo(f"The .cdsapirc file already exists at {cdsapirc}")
+        click.echo(f"  The .cdsapirc file already exists at {cdsapirc}")
         CDS_config = read_CDS_config(cdsapirc)
         matches = check_CDS_credentials(config, CDS_config)
         if matches:
-            click.echo("OK: Credentials in .cdsapirc file match with the ones in agera5tools.yaml.")
+            click.echo("  OK: Credentials in .cdsapirc file match with the ones in agera5tools.yaml.")
         else:
-            msg = "WARNING: Credentials in .cdsapirc file do NOT match with ones in agera5tools.yaml."
+            msg = "  WARNING: Credentials in .cdsapirc file do NOT match with ones in agera5tools.yaml."
             click.echo(msg)
-            r = click.confirm(f"Generate a new .cdsapirc file?")
+            r = click.confirm(f"  Generate a new .cdsapirc file?")
             if r:
                 with open(cdsapirc, "w") as fp:
                     fp.write(credentials)
-                click.echo(f"Successfully created .cdsapirc file at {cdsapirc}")
+                click.echo(f"  Successfully created .cdsapirc file at {cdsapirc}")
             else:
-                click.echo("Leaving current .cdsapirc file as is.")
+                click.echo("  Leaving current .cdsapirc file as is.")
 
 
 def create_AgERA5_config():
@@ -165,12 +167,13 @@ def build_database():
                        sa.Column("latitude", sa.Float),
                        sa.Column("elevation", sa.Float,),
                        )
+        click.echo(f"Initializing database at {config.database.dsn}")
         try:
             meta.create_all(engine)
-            click.echo(f"Succesfully created tables on DSN={engine}")
+            click.echo(f"  Succesfully created tables on DSN={engine}")
         except sa.exc.OperationalError as e:
-            click.echo("Failed creating tables, do they already exist?")
-            r = click.confirm(f"Continue with initializing?")
+            click.echo("  Failed creating tables, do they already exist?")
+            r = click.confirm(f"  Continue with initializing?")
             if not r:
                 sys.exit()
 
@@ -180,18 +183,18 @@ def init():
         first_time = create_AgERA5_config()
         if first_time:
             msg = ("\nYou just created a new configuration file time. Now carry out the following steps:\n"
-                   "1) inspect/update your configuration file first and update the paths for data storage. "
-                   "Currently all paths point to your home folder, which may not be suitable.\n"
-                   "2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the "
-                   "configuration file.\n"
-                   "3) Next rerun `init` to finalize the initialization\n")
+                   "  1) inspect/update your configuration file first and update the paths for data storage. "
+                   "     Currently all paths point to your home folder, which may not be suitable.\n"
+                   "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the "
+                   "     configuration file.\n"
+                   "  3) Next rerun `init` to finalize the initialization\n")
         else:
             msg = ("\nExisting configuration file was found. Now carry out the following steps:\n"
-                   "1) inspect/update your configuration file first and update the paths for data storage. "
-                   "Currently all paths point to your home folder, which may not be suitable.\n"
-                   "2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the "
-                   "configuration file\n"
-                   "3) Next rerun `init` to finalize the initialization\n")
+                   "  1) inspect/update your configuration file first and update the paths for data storage. "
+                   "     Currently all paths point to your home folder, which may not be suitable.\n"
+                   "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the "
+                   "     configuration file\n"
+                   "  3) Next rerun `init` to finalize the initialization\n")
         click.echo(msg)
         return False
 
