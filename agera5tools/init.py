@@ -96,11 +96,11 @@ def create_AgERA5_config():
             return False
 
     # Write a new config file, but first replace the /USERHOME/ with the users
-    # actual home directory
-    home = get_user_home() + "/"
+    # current directory
+    cwd = str(Path.cwd()) + "/"
     template_agera5t_config = Path(__file__).parent / "agera5tools.yaml"
     agera5t_config = open(template_agera5t_config).read()
-    agera5t_config = agera5t_config.replace("/USERHOME/", home)
+    agera5t_config = agera5t_config.replace("/USERHOME/", cwd)
     with open(agera5_conf, "w") as fp:
         fp.write(agera5t_config)
 
@@ -183,16 +183,16 @@ def init():
         first_time = create_AgERA5_config()
         if first_time:
             msg = ("\nYou just created a new configuration file time. Now carry out the following steps:\n"
-                   "  1) inspect/update your configuration file first and update the paths for data storage. "
-                   "     Currently all paths point to your home folder, which may not be suitable.\n"
-                   "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the "
+                   "  1) inspect/update your configuration file first and update the paths for data storage.\n"
+                   "     Currently all paths point to your current folder, which may not be suitable.\n"
+                   "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the\n"
                    "     configuration file.\n"
                    "  3) Next rerun `init` to finalize the initialization\n")
         else:
             msg = ("\nExisting configuration file was found. Now carry out the following steps:\n"
-                   "  1) inspect/update your configuration file first and update the paths for data storage. "
-                   "     Currently all paths point to your home folder, which may not be suitable.\n"
-                   "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the "
+                   "  1) inspect/update your configuration file first and update the paths for data storage.\n"
+                   "     Currently all paths point to your current folder, which may not be suitable.\n"
+                   "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the\n"
                    "     configuration file\n"
                    "  3) Next rerun `init` to finalize the initialization\n")
         click.echo(msg)
