@@ -13,7 +13,7 @@ logging:
   # Details for the log. Log levels follow conventions of the python logging framework.
   log_path: /USERHOME/agera5/logs
   log_fname: agera5tools.log
-  log_level_console: WARNING
+  log_level_console: ERROR
   log_level_file: INFO
 region:
   # This defines the characteristics of the region that you want to set up.
@@ -38,26 +38,24 @@ misc:
   #  - grid_search_radius is the radius within which the nearest grid ID will be searched,
   #    leave as is.
   #  - kelvin_to_celsius indicates if temperature conversion should be done.
-  agera5_version: "1.1"
   reference_point:
     lon: 90.00
     lat: 23.97
   grid_search_radius: 0.2
   kelvin_to_celsius: yes
+  agera5_version: "1.1"
 cdsapi:
   # Details for the Copernicus Climate Data Store. Information here will be written into the
   # $HOME/.cdsapirc file, which is used by the python API client for the CDS.
-  url: https://cds.climate.copernicus.eu/api/v2
-  key: <Your API key here.
-  uid: <Your UID here>
-  verify: 1
+  url: https://cds.climate.copernicus.eu/api
+  key: <PERSONAL-ACCESS-TOKEN here>
 database:
   # Details for the database that will be used to store the AgERA5 data.
   # The data source name (dsn) points to the database and should have the form of an
   # SQLAlchemy database URL: https://docs.sqlalchemy.org/en/20/core/engines.html
   # Note that the URL may contain the database password in plain text which is a security
   # risk.
-  dsn: sqlite:////USERHOME/agera5/agera5.db
+  dsn: duckdb:////USERHOME/agera5/agera5.ddb
   agera5_table_name: weather_grid_agera5
   grid_table_name: grid_agera5
   chunk_size: 10000

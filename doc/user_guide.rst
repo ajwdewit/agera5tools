@@ -14,9 +14,7 @@ daily with a delay on realtime of 8 days.
 
 Nevertheless, setting up AgERA5 in a way that is convenient for end users still requires a considerable effort.
 For example, the dataset is provided by the CDS as netCDF files but a way to easily access the data is
-not available. The CDS provides an interface to query AgERA5 data: the `AgERA5 explorer`_ but the interface
-is limited, it is very slow and it only allows to manually download single variables in CSV format.
-In this respect, the end-user experience of the `NASA POWER`_ dataset is much better as it provides
+not available. In this respect, the end-user experience of the `NASA POWER`_ dataset is much better as it provides
 a user interface and a convenient web API to query data. The AgERA5tools package has been developed
 to alleviate the problem with accessing AgERA5 data. It makes setting up a local mirror of AgERA5 much easier,
 time series of meteorological data can be extracted easily and it provides a web API that can be used by
@@ -30,68 +28,99 @@ other applications to easily access AgERA5 data.
 Setting up AgERA5tools
 ======================
 
+Choosing a suitable location
+----------------------------
+
+Depending on your settings the amount of data that is downloaded and written by agera5tools can be large. Downloading
+global data for the entire archive 1979-current can easily generate several Tb of data. A small setup with data for
+the Netherlands with data since 2017 is about 2 Gb.
+
+So before installing agera5tools you should select a location on you system with sufficient space for storing data.
+In the rest of the userguide we assume this location is `/data/agera5`
+
 Creating a python environment
 -----------------------------
 
 A python environment has to be created that has all the requirements for AgERA5tools. AgERA5tools was developed using
-python 3.8.10 but this is not critical. Older or more recent version of python will most likely work as well. Third party packages required for installing are::
+python 3.10 but this is not critical. Older or more recent version of python will most likely work as well. Third party packages required for installing are::
 
-    - Pandas >= 1.5
-    - SQLAlchemy >= 1.4
+    - pandas>=2.0
     - PyYAML >= 6.0
-    - xarray >= 2022.12.0
-    - dask >= 2022.7.7
+    - SQLAlchemy >= 2.0
+    - PyYAML >= 6.0
+    - xarray >= 2023.6.0
+    - dask >= 2023.0.0
     - click >= 8.1
     - flask >= 2.2
-    - cdsapi >= 0.5.1
+    - cdsapi >= 0.7.5
     - dotmap >= 1.3
     - netCDF4 >= 1.6
     - requests >= 2.28
     - wsgiserver >= 1.3
+    - duckdb >= 1.1.3
+    - duckdb_engine >= 0.13.6
 
 Although exact version numbers are provided, this is usually not critical.
 
-Creating a conda environment can be done (installing the Anaconda python environment is not covered here) from the
-command prompt with the `conda` command::
+Creating a python environment (installing Python is not covered here) from the command prompt can be done with
+the command::
 
-    $ conda create --name py38_a5t python=3.8 pandas sqlalchemy pyyaml xarray dask click flask netCDF4 requests
+    $ cd /data/agera5/
+    $ python -m venv py310_a5t
 
 The environment can be activated with::
 
-    $ conda activate py38_a5t
+    $ source py310_a5t/bin/activate
 
-Finally, a few additional packages need to be installed with pip::
+Which will change the command prompt and allows to start the python interpreter in the virtual environment::
 
-    $ pip install cdsapi dotmap wsgiserver
-
+    (py310_a5t) $ python
+    Python 3.10.14 (main, May  6 2024, 19:42:50) [GCC 11.2.0] on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>>
 
 Installing AgERA5tools
 ----------------------
 
-AgERA5tools can now be installed with::
+Finally, agera5tools can be installed with pip::
 
-   $ pip install agera5tools
+    $ pip install agera5tools
+
+this will install agera5tools and its dependencies. The output should look like::
+
+    Downloading https://github.com/ajwdewit/agera5tools/archive/refs/heads/develop_duckdb.zip
+         - 3.1 MB 11.2 MB/s 0:00:00
+      Installing build dependencies ... done
+      Getting requirements to build wheel ... done
+      Preparing metadata (pyproject.toml) ... done
+    Collecting cdsapi>=0.7.5
+      Downloading cdsapi-0.7.5-py2.py3-none-any.whl (12 kB)
+
+    ...
+
+    Successfully built agera5tools
+    Installing collected packages: wsgiserver, pytz, dotmap, zipp, urllib3, tzdata, typing-extensions, tqdm, toolz, six, PyYAML, packaging, numpy, MarkupSafe, locket, itsdangerous, idna, greenlet, fsspec, duckdb, cloudpickle, click, charset-normalizer, certifi, blinker, attrs, Werkzeug, SQLAlchemy, requests, python-dateutil, partd, Jinja2, importlib_metadata, cftime, pandas, netCDF4, multiurl, flask, duckdb_engine, dask, xarray, datapi, cdsapi, agera5tools
+    Successfully installed Jinja2-3.1.4 MarkupSafe-3.0.2 PyYAML-6.0.2 SQLAlchemy-2.0.36 Werkzeug-3.1.3 agera5tools-2.1.0 attrs-24.3.0 blinker-1.9.0 cdsapi-0.7.5 certifi-2024.12.14 cftime-1.6.4.post1 charset-normalizer-3.4.0 click-8.1.7 cloudpickle-3.1.0 dask-2024.12.1 datapi-0.1.1 dotmap-1.3.30 duckdb-1.1.3 duckdb_engine-0.14.0 flask-3.1.0 fsspec-2024.10.0 greenlet-3.1.1 idna-3.10 importlib_metadata-8.5.0 itsdangerous-2.2.0 locket-1.0.0 multiurl-0.3.3 netCDF4-1.7.2 numpy-2.2.0 packaging-24.2 pandas-2.2.3 partd-1.4.2 python-dateutil-2.9.0.post0 pytz-2024.2 requests-2.32.3 six-1.17.0 toolz-1.0.0 tqdm-4.67.1 typing-extensions-4.12.2 tzdata-2024.2 urllib3-2.2.3 wsgiserver-1.3 xarray-2024.11.0 zipp-3.21.0
+
 
 The `agera5tools` package can now be imported from python::
 
-    $ python
-    Python 3.8.10 (default, Nov 14 2022, 12:59:47)
-    [GCC 9.4.0] on linux
+    (py310_a5t)$ python
+    Python 3.10.14 (main, May  6 2024, 19:42:50) [GCC 11.2.0] on linux
     Type "help", "copyright", "credits" or "license" for more information.
     >>> import agera5tools
-    No config found: Using default AGERA5TOOLS configuration!
-    using config from /home/allard/Projects/crucial/agera5tools/agera5tools/agera5tools.yaml
+    No config found, use `agera5tools init` to generate one!
     >>>
 
 Moreover, there should be an `agera5tools` command in your current environment::
 
     $ agera5tools
-    No config found: Using default AGERA5TOOLS configuration!
-    using config from /home/allard/Projects/crucial/agera5tools/venv/lib/python3.8/site-packages/agera5tools/agera5tools.yaml
+    No config found, use `agera5tools init` to generate one!
     Usage: agera5tools [OPTIONS] COMMAND [ARGS]...
 
     Options:
-      --help  Show this message and exit.
+      --version  Show the version and exit.
+      --help     Show this message and exit.
 
     Commands:
       build          Builds the AgERA5 database by bulk download from CDS
@@ -113,8 +142,8 @@ Initializing agera5tools - part I
 ---------------------------------
 
 First of all, a location needs to be created where agera5tools can store the configuration file, data, logs and
-temporary storage. In this setup we assume that this will be under `/data/agera5/`. An SQLite database will then
-be created under `/data/agera5/agera5.db`, log files will reside under `/data/agera5/logs/`, NetCDF files
+temporary storage. In this setup we assume that this will be under `/data/agera5/`. A DuckDB database will then
+be created under `/data/agera5/agera5.ddb`, log files will reside under `/data/agera5/logs/`, NetCDF files
 downloaded from the Climate Data Store will go under `/data/agera5/ncfiles` while CSV exports and temporary
 files go under `/data/agera5/csv` and `/data/agera5/tmp`.
 
@@ -124,12 +153,14 @@ directory. Press enter to abort the init process in order to first modify the co
     $ agera5tools init
     No config found, use `agera5tools init` to generate one!
     Successfully created agera5tools config file at:
-       /home/wit015/Sources/python/agera5tools/agera5tools.yaml
+       /data/agera5/agera5tools.yaml
 
     You just created a new configuration file time. Now carry out the following steps:
-    1) inspect/update your configuration file first and update the paths for data storage. Currently all paths point to your home folder, which may not be suitable.
-    2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the configuration file.
-    3) Next rerun `init` to finalize the initialization
+      1) inspect/update your configuration file first and update the paths for data storage.
+         Currently all paths point to your home folder, which may not be suitable.
+      2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the configuration file.
+      3) Next rerun `init` to finalize the initialization
+
 
 
 Now we need to inspect the `agera5tools.yaml` file with a text editor. We will go through the section of the
@@ -231,21 +262,25 @@ Credentials for the Climate Data Store
 
 The API credentials for the Climate Data Store can be obtained by registering on the `CDS`_
 and retrieving the UID and API key from your login details page on the CDS. Note that the
-UID and API Key are *different from the username/password* that you used to register on the CDS.
+API Key is not the same as your password that you used to register on the CDS.
 Moreover, if you are already using the python `cdsapi` package to retrieve data from the CDS,
 you probably already have a `.cdsapirc` file in your home folder and you can skip this step.
 
 .. _`CDS`: https://cds.climate.copernicus.eu
+
+.. warning::
+
+    with the migration to the new CDS in September 2024 your old `.cdsapirc` may
+    not be valid anymore and you better delete it and generate a new one.
+
 
 .. code:: yaml
 
     cdsapi:
       # Details for the Copernicus Climate Data Store. Information here will be written into the
       # $HOME/.cdsapirc file, which is used by the python API client for the CDS.
-      url: https://cds.climate.copernicus.eu/api/v2
-      key: <Your API key here>
-      uid: <Your UID here>
-      verify: 1
+      url: https://cds.climate.copernicus.eu/api
+      key: <PERSONAL-ACCESS-TOKEN here>
 
 .. warning::
 
@@ -261,7 +296,7 @@ Database settings
 
 The database settings define the data source name to the database and the table name used to
 store the AgERA5 data. Note that the DSN should follow the SQLAlchemy database URL naming
-convention. The example below uses a local SQLite database which is a serverless database
+convention. The example below uses a local DuckDB database which is a serverless database
 without security risks.
 
 The `chunk_size` parameter defines the number of records that are written to the database
@@ -285,7 +320,7 @@ progress during database writing. The `chunk_size` parameter should be larger th
       # SQLAlchemy database URL: https://docs.sqlalchemy.org/en/20/core/engines.html
       # Note that the URL may contain the database password in plain text which is a security
       # risk.
-      dsn: sqlite:////data/agera5/agera5.db
+      dsn: duckdb:////data/agera5/agera5.ddb
       agera5_table_name: weather_grid_agera5
       grid_table_name: grid_agera5
       chunk_size: 10000
@@ -296,7 +331,8 @@ Data storage locations
 Agera5tools requires several locations on the filesystem for storing netCDF files, log files and
 optionally compressed CSV exports that can be used to manually load data into the database.
 Keeping the NetCDF files that are downloaded from the CDS is optional, but makes rebuilding the
-database faster as no downloads to have be carried out.
+database faster as no downloads to have be carried out. Since NetCDF files have compression they
+store the data very efficiently so usually there is no reason to delete the NetCDF files.
 
 .. code:: yaml
 
@@ -348,6 +384,7 @@ the configuration file. In a Linux bash shell this is done as:
 
     Commands:
       build          Builds the AgERA5 database by bulk download from CDS
+      buildym        Builds the AgERA5 database by bulk download from CDS for...
       check          Checks the completeness of NetCDF files from which the...
       clip           Extracts a portion of agERA5 for the given bounding box...
       dump           Dump AgERA5 data for a given day to CSV, JSON or SQLite
@@ -374,14 +411,19 @@ Now we can finalize the init proces by rerunning the `init` command:
 
     If this is the first time you run `init` you probably want to abort now and inspect/update your
     configuration file first. Continue? [y/N]: y
-    The .cdsapirc file already exists at /home/wit015/.cdsapirc
-    Succesfully created tables on DSN=Engine(sqlite:////data/agera5/agera5.db)
+    Checking credentials for the Copernicus Climate Data Store.
+      The .cdsapirc file already exists at /home/wit015/.cdsapirc
+      WARNING: Credentials in .cdsapirc file do NOT match with ones in agera5tools.yaml.
+      Generate a new .cdsapirc file? [y/N]:
+      Leaving current .cdsapirc file as is.
+    Initializing database at duckdb:////home/wit015/agera5/agera5.ddb
+      Succesfully created tables on DSN=Engine(duckdb:////home/wit015/agera5/agera5.ddb)
     AgERA5tools successfully initialized!.
 
 As you see, agera5tools has checked if a .cdsapirc file exists. In this case it did find one, otherwise it would
-have created one. Next, it has created an SQLite database that will be used for storing the AgERA5 data. Note that
-for small setups an SQLite database is fine. However, for covering large areas a more capable database server will
-be required such as MySQL or PostgreSQL.
+have created one. Next, it has created an DuckDB database that will be used for storing the AgERA5 data. Note that
+agera5tools can use databases like MySQL or PostgreSQL but if there is no specific reason for using a client/server
+database then DuckDB is often the simplest and fastest option.
 
 Building the database
 ---------------------
@@ -409,16 +451,16 @@ and `--to_csv`:
       --help             Show this message and exit.
 
 Without those options, the build command only downloads NetCDF files but does not load anything in the database
-or export to CSV. It will therefore issue a warning that no output will be written.
+or export to CSV. It will therefore issue a warning that no output will be written to the database.
 
-The background of implementing these options is that the database loading of agera5tools relies on the `to_sql()`
-functionality of `pandas` which is a relatively slow method. For small setups this is fine and you can directly
-load by specifying `--to_database`. However, for setups over large regions, this can be very slow and instead
-you want to export to CSV files. Next you can load the database by using dedicated loading tools such as
-`pgloader`_ for postgress, `sqlloader`_ for ORACLE and MySQL `LOAD DATA` statements which take the CSV files as
-input.
+The background of implementing these options is that (except for DuckDB) the database loading of agera5tools relies
+on the `to_sql()` functionality of `pandas` which is a relatively slow method. However, for setups over large regions,
+this can be very slow and instead you want to export to CSV files. Next you can load the database by using dedicated
+loading tools such as `pgloader`_ for postgress, `sqlloader`_ for ORACLE and MySQL `LOAD DATA` statements which take
+the CSV files as input. Note that this latter does not apply to DuckDB which can load data directly from pandas
+dataframes very efficiently
 
-Alternatively, you can use the `buildym` to build the database for a specific year/month. This can be useful
+Alternatively, you can use the `buildym` command to build the database for a specific year/month. This can be useful
 in certain situations where you want to force building of CSV files for database loading for a specific year/month.
 
 .. code:: bash
@@ -434,7 +476,7 @@ in certain situations where you want to force building of CSV files for database
       -c, --to_csv       Write AgERA5 data to compressed CSV files.
       --help             Show this message and exit.
 
-For the current example, we will run `build` and directly write data into the SQLite database:
+For the current example, we will run `build` and directly write data into the DuckDB database:
 
 .. code:: bash
 

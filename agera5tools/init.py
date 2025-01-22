@@ -15,6 +15,8 @@ import time
 from pathlib import Path
 import logging
 from types import SimpleNamespace
+import warnings
+warnings.filterwarnings("ignore")
 
 import click
 import sqlalchemy as sa
@@ -46,11 +48,10 @@ def check_CDS_credentials(config, CDS_config):
     """Checks if the UID/key in the current .cdsapirc file (CDS_config) matches with the ones
     provided in the YAML file (config).
     """
-    uid1, key1 = CDS_config.key.replace(" ", "").split(":")
-    uid2, key2 = str(config.cdsapi.uid), str(config.cdsapi.key)
+    key1 = CDS_config.key.strip()
+    key2 = str(config.cdsapi.key).strip()
 
-    return True if (uid1, key1) == (uid2, key2) else False
-
+    return True if key1 == key2 else False
 
 
 def set_CDSAPI_credentials():
@@ -59,30 +60,29 @@ def set_CDSAPI_credentials():
     home = Path.home()
     cdsapirc = home / ".cdsapirc"
     credentials = (f"url: {config.cdsapi.url}\n"
-                   f"key: {config.cdsapi.uid}:{config.cdsapi.key}\n"
-                   "verify: 1\n")
+                   f"key: {config.cdsapi.key}\n")
 
     click.echo(f"Checking credentials for the Copernicus Climate Data Store.")
     if not cdsapirc.exists():
         with open(cdsapirc, "w") as fp:
             fp.write(credentials)
-        click.echo(f"Successfully created .cdsapirc file at {cdsapirc}")
+        click.echo(f"  Successfully created .cdsapirc file at {cdsapirc}")
     else:
-        click.echo(f"The .cdsapirc file already exists at {cdsapirc}")
+        click.echo(f"  The .cdsapirc file already exists at {cdsapirc}")
         CDS_config = read_CDS_config(cdsapirc)
         matches = check_CDS_credentials(config, CDS_config)
         if matches:
-            click.echo("OK: Credentials in .cdsapirc file match with the ones in agera5tools.yaml.")
+            click.echo("  OK: Credentials in .cdsapirc file match with the ones in agera5tools.yaml.")
         else:
-            msg = "WARNING: Credentials in .cdsapirc file do NOT match with ones in agera5tools.yaml."
+            msg = "  WARNING: Credentials in .cdsapirc file do NOT match with ones in agera5tools.yaml."
             click.echo(msg)
-            r = click.confirm(f"Generate a new .cdsapirc file?")
+            r = click.confirm(f"  Generate a new .cdsapirc file?")
             if r:
                 with open(cdsapirc, "w") as fp:
                     fp.write(credentials)
-                click.echo(f"Successfully created .cdsapirc file at {cdsapirc}")
+                click.echo(f"  Successfully created .cdsapirc file at {cdsapirc}")
             else:
-                click.echo("Leaving current .cdsapirc file as is.")
+                click.echo("  Leaving current .cdsapirc file as is.")
 
 
 def create_AgERA5_config():
@@ -96,11 +96,11 @@ def create_AgERA5_config():
             return False
 
     # Write a new config file, but first replace the /USERHOME/ with the users
-    # actual home directory
-    home = get_user_home() + "/"
+    # current directory
+    cwd = str(Path.cwd()) + "/"
     template_agera5t_config = Path(__file__).parent / "agera5tools.yaml"
     agera5t_config = open(template_agera5t_config).read()
-    agera5t_config = agera5t_config.replace("/USERHOME/", home)
+    agera5t_config = agera5t_config.replace("/USERHOME/", cwd)
     with open(agera5_conf, "w") as fp:
         fp.write(agera5t_config)
 
@@ -126,8 +126,8 @@ def fill_grid_table():
             .rename(columns={"idgrid_era5": "idgrid"}))
 
     engine = sa.create_engine(config.database.dsn)
-    meta = sa.MetaData(engine)
-    tbl = sa.Table(config.database.grid_table_name, meta, autoload=True)
+    meta = sa.MetaData()
+    tbl = sa.Table(config.database.grid_table_name, meta, autoload_with=engine)
     recs = df.to_dict(orient="records")
     nrecs_written = 0
     t1 = time.time()
@@ -149,32 +149,33 @@ def fill_grid_table():
 
 def build_database():
     engine = sa.create_engine(config.database.dsn)
-    meta = sa.MetaData(engine)
+    with engine.connect() as DBconn:
+        meta = sa.MetaData()
 
-    # Build table with weather data
-    tbl1 = sa.Table(config.database.agera5_table_name, meta,
-                   sa.Column("idgrid", sa.Integer, primary_key=True),
-                   sa.Column("day", sa.Date, primary_key=True))
-    for variable, selected in config.variables.items():
-        if selected:
-            tbl1.append_column(sa.Column(variable.lower(), sa.Float))
+        # Build table with weather data
+        tbl1 = sa.Table(config.database.agera5_table_name, meta,
+                       sa.Column("idgrid", sa.Integer, primary_key=True, autoincrement=False),
+                       sa.Column("day", sa.Date, primary_key=True))
+        for variable, selected in config.variables.items():
+            if selected:
+                tbl1.append_column(sa.Column(variable.lower(), sa.Float))
 
-    # Build table with grid definition
-    tbl2 = sa.Table(config.database.grid_table_name, meta,
-                   sa.Column("idgrid", sa.Integer, primary_key=True),
-                   sa.Column("longitude", sa.Float),
-                   sa.Column("latitude", sa.Float),
-                   sa.Column("elevation", sa.Float,),
-                   )
-    try:
-        tbl2.create()
-        tbl1.create()
-        click.echo(f"Succesfully created tables on DSN={engine}")
-    except sa.exc.OperationalError as e:
-        click.echo("Failed creating tables, do they already exist?")
-        r = click.confirm(f"Continue with initializing?")
-        if not r:
-            sys.exit()
+        # Build table with grid definition
+        tbl2 = sa.Table(config.database.grid_table_name, meta,
+                       sa.Column("idgrid", sa.Integer, primary_key=True, autoincrement=False),
+                       sa.Column("longitude", sa.Float),
+                       sa.Column("latitude", sa.Float),
+                       sa.Column("elevation", sa.Float,),
+                       )
+        click.echo(f"Initializing database at {config.database.dsn}")
+        try:
+            meta.create_all(engine)
+            click.echo(f"  Succesfully created tables on DSN={engine}")
+        except sa.exc.OperationalError as e:
+            click.echo("  Failed creating tables, do they already exist?")
+            r = click.confirm(f"  Continue with initializing?")
+            if not r:
+                sys.exit()
 
 def init():
 
@@ -182,18 +183,20 @@ def init():
         first_time = create_AgERA5_config()
         if first_time:
             msg = ("\nYou just created a new configuration file time. Now carry out the following steps:\n"
-                   "1) inspect/update your configuration file first and update the paths for data storage. "
-                   "Currently all paths point to your home folder, which may not be suitable.\n"
-                   "2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the "
-                   "configuration file.\n"
-                   "3) Next rerun `init` to finalize the initialization\n")
+                   "  1) inspect/update your configuration file first and update the paths for data storage.\n"
+                   "     Currently all paths point to your current folder, which may not be suitable.\n"
+                   "     Moreover, add your API credentials for the Climate Data Store.\n"
+                   "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the\n"
+                   "     configuration file.\n"
+                   "  3) Next rerun `init` to finalize the initialization\n")
         else:
             msg = ("\nExisting configuration file was found. Now carry out the following steps:\n"
-                   "1) inspect/update your configuration file first and update the paths for data storage. "
-                   "Currently all paths point to your home folder, which may not be suitable.\n"
-                   "2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the "
-                   "configuration file\n"
-                   "3) Next rerun `init` to finalize the initialization\n")
+                   "  1) inspect/update your configuration file first and update the paths for data storage.\n"
+                   "     Currently all paths point to your current folder, which may not be suitable.\n"
+                   "     Moreover, add your API credentials for the Climate Data Store.\n"
+                   "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the\n"
+                   "     configuration file\n"
+                   "  3) Next rerun `init` to finalize the initialization\n")
         click.echo(msg)
         return False
 
@@ -203,6 +206,7 @@ def init():
     fill_grid_table()
 
     return True
+
 
 if __name__ == "__main__":
     init()

@@ -65,9 +65,12 @@ def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final",
 def create_agera5_fnames(agera5_dir, var_names, day):
     """returns the list of 22 AgERA5 variable filenames.
     """
+    from . import config
     fnames = []
     for var_name in var_names:
-        fname = create_target_fname(var_name, day, agera5_dir)
+        fname = create_target_fname(var_name, day,
+                                    agera5_dir=config.data_storage.netcdf_path,
+                                    version=config.misc.agera5_version)
         if not fname.exists():
             msg = f"Cannot find file: {fname}"
             if CMD_MODE:

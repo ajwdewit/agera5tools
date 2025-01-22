@@ -16,7 +16,7 @@ import click
 
 from . import util
 
-__version__ = "2.0.16"
+__version__ = "2.1.0"
 
 def setup_logging(config, has_filesystem):
     """sets up the logging system for both logging to file and to console.
@@ -106,11 +106,12 @@ def read_config(mk_paths=True):
 
     :return:a DotMap object with the configuration
     """
+    from .util import BoundingBox
 
     has_config = False
     if "AGERA5TOOLS_CONFIG" in os.environ:
         agera5t_config = Path(os.environ["AGERA5TOOLS_CONFIG"]).absolute()
-        print(f"using config from {agera5t_config}")
+        click.echo(f"using config from {agera5t_config}")
         has_config = True
     else:
         agera5t_config = Path(__file__).parent / "agera5tools.yaml"
@@ -147,7 +148,7 @@ config = read_config(mk_paths=has_filesystem)
 if config:
     setup_logging(config, has_filesystem)
 
-
+from . import util
 from .dump_grid import dump_grid
 from .dump_clip import dump, clip
 from .extract_point import extract_point
