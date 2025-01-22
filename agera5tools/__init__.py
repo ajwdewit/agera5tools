@@ -3,14 +3,15 @@
 # Allard de Wit (allard.dewit@wur.nl)
 
 import os, sys
-
-__version__ = "2.1.0"
-# This will be set to 1 only for commandline mode. Not when importing
-# agera5tools in python.
-os.environ["CMD_MODE"] = "0"
 from pathlib import Path
 import logging
 import logging.config
+
+__version__ = "2.1.0"
+
+# This will be set to 1 only for commandline mode. Not when importing
+# agera5tools in python.
+os.environ["CMD_MODE"] = "0"
 
 
 def setup_logging(config, has_filesystem):
@@ -143,11 +144,11 @@ def read_config(mk_paths=True):
     return c
 
 
-has_filesystem = False if "READTHEDOCS" in os.environ else True
-config = read_config(mk_paths=has_filesystem)
-if config:
+if "READTHEDOCS" not in os.environ:  # Avoid imports for building documentation on RTD
+    has_filesystem = True
+    config = read_config(mk_paths=has_filesystem)
     setup_logging(config, has_filesystem)
-if "READTHEDOCS" not in os.environ:
+
     from . import util
     from .dump_grid import dump_grid
     from .dump_clip import dump, clip
@@ -156,7 +157,3 @@ if "READTHEDOCS" not in os.environ:
     from . import init
     from . import check
     from . import mirror
-
-
-
-
