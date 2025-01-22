@@ -14,8 +14,6 @@ build:
   tools:
     python: "3.9"
 
-
-
 python:
    install:
-   - requirements: requirements.txt
+   - requirements: doc/requirements.txt
