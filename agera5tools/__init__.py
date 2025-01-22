@@ -3,6 +3,8 @@
 # Allard de Wit (allard.dewit@wur.nl)
 
 import os, sys
+
+__version__ = "2.1.0"
 # This will be set to 1 only for commandline mode. Not when importing
 # agera5tools in python.
 os.environ["CMD_MODE"] = "0"
@@ -10,13 +12,6 @@ from pathlib import Path
 import logging
 import logging.config
 
-import yaml
-from dotmap import DotMap
-import click
-
-from . import util
-
-__version__ = "2.1.0"
 
 def setup_logging(config, has_filesystem):
     """sets up the logging system for both logging to file and to console.
@@ -96,6 +91,7 @@ def setup_logging(config, has_filesystem):
     else:
         logging.config.dictConfig(LOG_CONFIG_RTD)
 
+
 def read_config(mk_paths=True):
     """Reads the YAML file with configuration for AgERA5tools
 
@@ -107,6 +103,9 @@ def read_config(mk_paths=True):
     :return:a DotMap object with the configuration
     """
     from .util import BoundingBox
+    import yaml
+    from dotmap import DotMap
+    import click
 
     has_config = False
     if "AGERA5TOOLS_CONFIG" in os.environ:
@@ -143,19 +142,20 @@ def read_config(mk_paths=True):
 
     return c
 
+
 has_filesystem = False if "READTHEDOCS" in os.environ else True
 config = read_config(mk_paths=has_filesystem)
 if config:
     setup_logging(config, has_filesystem)
-
-from . import util
-from .dump_grid import dump_grid
-from .dump_clip import dump, clip
-from .extract_point import extract_point
-from . import build
-from . import init
-from . import check
-from . import mirror
+if "READTHEDOCS" not in os.environ:
+    from . import util
+    from .dump_grid import dump_grid
+    from .dump_clip import dump, clip
+    from .extract_point import extract_point
+    from . import build
+    from . import init
+    from . import check
+    from . import mirror
 
 
 

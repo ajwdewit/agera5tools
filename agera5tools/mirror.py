@@ -146,5 +146,6 @@ def mirror(to_csv=True, dry_run=False):
 
     return days, days_failed
 
+
 if __name__ == "__main__":
     mirror()

@@ -296,6 +296,7 @@ def get_nc_filenames(varnames, year, month, day=None, check=True):
 
     return nc_fnames
 
+
 def build(year_month=None, to_database=True, to_csv=False):
     """Builds the AgERA5tools database.
 

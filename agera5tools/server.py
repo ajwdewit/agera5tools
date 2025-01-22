@@ -66,7 +66,6 @@ def flask_get_agera5():
     return get_JSON_response(get_agera5, params, "get_agera5")
 
 
-
 def serve(port=8080):
     server = wsgiserver.WSGIServer(app, port=port)
     server.start()
