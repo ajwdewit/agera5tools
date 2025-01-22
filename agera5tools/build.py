@@ -2,6 +2,7 @@
 # Copyright (c) December 2022, Wageningen Environmental Research
 # Allard de Wit (allard.dewit@wur.nl)
 import os
+from pathlib import Path
 import logging
 import shutil
 import gzip
@@ -196,7 +197,7 @@ def df_to_database(df, descriptor):
     t1 = time.time()
     try:
         if config.database.dsn.startswith("duckdb"):
-            fname_duckdb = config.database.dsn[9:]
+            fname_duckdb = Path(config.database.dsn.replace("duckdb:///", ""))
             with duckdb.connect(fname_duckdb) as DBconn:
                 DBconn.sql(f"INSERT INTO {config.database.agera5_table_name} BY NAME SELECT * FROM df")
         else:
@@ -214,7 +215,7 @@ def df_to_database(df, descriptor):
                     logger.info(msg)
         logger.info(f"Written AgERA5 data for {descriptor} to database in {time.time()-t1} seconds.")
     except (sa.exc.IntegrityError, duckdb.duckdb.ConstraintException) as e:
-        logger.error(f"Failed inserting AgERA5 data for {descriptor}: duplicate rows!")
+        logger.warning(f"Failed inserting AgERA5 data for {descriptor}: duplicate rows!")
     except Exception as e:
         logger.error(f"Failed inserting AgERA5 data for {descriptor}: {e}!")
 
@@ -340,14 +341,13 @@ def build(year_month=None, to_database=True, to_csv=False):
             nc_files = get_nc_filenames(selected_variables, year, month, day)
             df = None
 
+            if to_database or to_csv:
+                df = convert_ncfiles_to_dataframe(nc_files)
+
             if to_database:
-                if df is None:
-                    df = convert_ncfiles_to_dataframe(nc_files)
                 df_to_database(df, descriptor=f"{day}")
 
             if to_csv and CSV_not_yet_written:
-                if df is None:
-                    df = convert_ncfiles_to_dataframe(nc_files)
                 fm = "w" if day.day == 1 else "a"  # Start new file on 1st day of the month, else append
                 df_to_csv(df, csv_fname_tmp, filemode=fm)
 
@@ -356,7 +356,7 @@ def build(year_month=None, to_database=True, to_csv=False):
                 [f.unlink() for f in nc_files]
 
         # Move tmp CSV file to final name
-        if CSV_not_yet_written:
+        if to_csv and CSV_not_yet_written:
             os.rename(csv_fname_tmp, csv_fname)
 
 

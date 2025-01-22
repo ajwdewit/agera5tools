@@ -185,6 +185,7 @@ def init():
             msg = ("\nYou just created a new configuration file time. Now carry out the following steps:\n"
                    "  1) inspect/update your configuration file first and update the paths for data storage.\n"
                    "     Currently all paths point to your current folder, which may not be suitable.\n"
+                   "     Moreover, add your API credentials for the Climate Data Store.\n"
                    "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the\n"
                    "     configuration file.\n"
                    "  3) Next rerun `init` to finalize the initialization\n")
@@ -192,6 +193,7 @@ def init():
             msg = ("\nExisting configuration file was found. Now carry out the following steps:\n"
                    "  1) inspect/update your configuration file first and update the paths for data storage.\n"
                    "     Currently all paths point to your current folder, which may not be suitable.\n"
+                   "     Moreover, add your API credentials for the Climate Data Store.\n"
                    "  2) Set the AGERA5TOOLS_CONFIG environment variable to the location of the\n"
                    "     configuration file\n"
                    "  3) Next rerun `init` to finalize the initialization\n")
@@ -204,6 +206,7 @@ def init():
     fill_grid_table()
 
     return True
+
 
 if __name__ == "__main__":
     init()
