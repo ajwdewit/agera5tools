@@ -235,6 +235,14 @@ def add_grid(ds):
     agera5_grid = Path(__file__).parent / "grid_elevation_landfraction.nc"
     ds_grid = xr.open_dataset(agera5_grid)
 
+    # It might happen that ds has duplicated longitudes. In this
+    # case we need to drop them first to avoid a re-indexing error
+    # when assigning the grid ID
+    if ds.lon.shape > ds_grid.lon.shape:
+        ds = ds.drop_duplicates("lon", keep="first")
+    if ds.lat.shape > ds_grid.lat.shape:
+        ds = ds.drop_duplicates("lat", keep="first")
+
     ds["idgrid"] = ds_grid.idgrid_era5
 
     return ds
