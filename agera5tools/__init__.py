@@ -7,7 +7,7 @@ from pathlib import Path
 import logging
 import logging.config
 
-__version__ = "3.0.1"
+__version__ = "3.0.2"
 
 # This will be set to 1 only for commandline mode. Not when importing
 # agera5tools in python.

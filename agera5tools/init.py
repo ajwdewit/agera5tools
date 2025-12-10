@@ -10,7 +10,7 @@
 - The start year to begin downloading AgERA5
 """
 import sys, os
-import platform
+from math import ceil
 import time
 from pathlib import Path
 import logging
@@ -136,7 +136,8 @@ def fill_grid_table():
     try:
         with engine.begin() as DBconn:
             ins = tbl.insert()
-            for chunk in tqdm(chunker(recs, config.database.chunk_size)):
+            nchunks = ceil(len(recs)/config.database.chunk_size)
+            for chunk in tqdm(chunker(recs, config.database.chunk_size), total=nchunks):
                 DBconn.execute(ins, chunk)
                 nrecs_written += len(chunk)
                 msg = f"Written {nrecs_written} from total {len(recs)} records to database."
