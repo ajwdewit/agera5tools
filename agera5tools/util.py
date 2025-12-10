@@ -24,7 +24,7 @@ CMD_MODE = True if os.environ["CMD_MODE"] == "1" else False
 variable_names = {'Temperature_Air_2m_Mean_24h': dict(variable="2m_temperature", statistic ="24_hour_mean"),
                   'Temperature_Air_2m_Mean_Day_Time': dict(variable="2m_temperature", statistic ="day_time_mean"),
                   'Temperature_Air_2m_Mean_Night_Time': dict(variable="2m_temperature", statistic ="night_time_mean"),
-                  'Dew_Point_Temperature_2m_Mean': dict(variable="2m_dewpoint_temperature", statistic ="24_hour_mean"),
+                  'Dew_Point_Temperature_2m_Mean_24h': dict(variable="2m_dewpoint_temperature", statistic ="24_hour_mean"),
                   'Temperature_Air_2m_Max_24h': dict(variable="2m_temperature", statistic ="24_hour_maximum"),
                   'Temperature_Air_2m_Min_24h': dict(variable="2m_temperature", statistic ="24_hour_minimum"),
                   'Temperature_Air_2m_Max_Day_Time': dict(variable="2m_temperature", statistic ="day_time_maximum"),

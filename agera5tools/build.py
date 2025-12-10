@@ -15,6 +15,7 @@ import copy
 from itertools import product
 
 import cdsapi
+from tqdm import tqdm
 import sqlalchemy as sa
 import duckdb
 import xarray as xr
@@ -103,7 +104,7 @@ def download_one_month(input):
     done = False
     for ntry in range(config.cdsapi.max_tries):
         try:
-            c = cdsapi.Client(quiet=True)
+            c = cdsapi.Client(quiet=True, progress=False)
             c.retrieve('sis-agrometeorological-indicators', cds_query, download_fname)
             msg = f"Downloaded data for {agera5_variable_name} for {year}-{month:02} to {download_fname} after {ntry} tries."
             logger.debug(msg)
@@ -335,7 +336,7 @@ def build(year_month=None, to_database=True, to_csv=False):
     selected_years_months = build_years_months if year_month is None else year_month
     selected_variables = [varname for varname, selected in config.variables.items() if selected]
 
-    for year, month in build_years_months:
+    for year, month in tqdm(build_years_months, desc="Downloading data"):
         if (year, month) not in selected_years_months:
             continue
         logger.info(f"Starting AgERA5 download for {year}-{month:02}")
@@ -355,7 +356,7 @@ def build(year_month=None, to_database=True, to_csv=False):
         else:
             logger.info(f"Skipping download, NetCDF files already exist.")
 
-    for year, month in build_years_months:
+    for year, month in tqdm(build_years_months, desc="Loading into DB"):
         if (year, month) not in selected_years_months:
             continue
         csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{year}-{month:02}.csv.gz"

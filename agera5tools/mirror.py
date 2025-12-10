@@ -9,6 +9,7 @@ import copy
 import time
 
 import cdsapi
+from tqdm import tqdm
 import pandas as pd
 import sqlalchemy as sa
 from requests.exceptions import SSLError, HTTPError
@@ -130,7 +131,7 @@ def mirror(to_csv=True, dry_run=False):
     if dry_run:  # Do not actually start processing
         return days, days_failed
 
-    for day in sorted(days):
+    for day in tqdm(sorted(days), desc="Downloading data"):
         logger.info(f"Starting AgERA5 download for {day}")
         to_download = []
         for varname in selected_variables:

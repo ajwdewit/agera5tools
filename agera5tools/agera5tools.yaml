@@ -72,7 +72,7 @@ variables:
   Temperature_Air_2m_Mean_24h: yes
   Temperature_Air_2m_Mean_Day_Time: no
   Temperature_Air_2m_Mean_Night_Time: no
-  Dew_Point_Temperature_2m_Mean: no
+  Dew_Point_Temperature_2m_Mean_24h: no
   Temperature_Air_2m_Max_24h: yes
   Temperature_Air_2m_Min_24h: yes
   Temperature_Air_2m_Max_Day_Time: no
@@ -80,9 +80,9 @@ variables:
   Cloud_Cover_Mean: no
   Snow_Thickness_LWE_Mean: no
   Snow_Thickness_Mean: no
-  Vapour_Pressure_Mean: yes
+  Vapour_Pressure_Mean_24h: yes
   Precipitation_Flux: yes
-  Solar_Radiation_Flux_24h: yes
+  Solar_Radiation_Flux: yes
   Wind_Speed_10m_Mean_24h: yes
   Relative_Humidity_2m_06h: no
   Relative_Humidity_2m_09h: no
