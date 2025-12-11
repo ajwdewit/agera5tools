@@ -29,7 +29,7 @@ variable_names = {'Temperature_Air_2m_Mean_24h': dict(variable="2m_temperature",
                   'Temperature_Air_2m_Min_24h': dict(variable="2m_temperature", statistic ="24_hour_minimum"),
                   'Temperature_Air_2m_Max_Day_Time': dict(variable="2m_temperature", statistic ="day_time_maximum"),
                   'Temperature_Air_2m_Min_Night_Time': dict(variable="2m_temperature", statistic ="night_time_minimum"),
-                  'Cloud_Cover_Mean': dict(variable="cloud_cover", statistic ="24_hour_mean"),
+                  'Cloud_Cover_Mean_24h': dict(variable="cloud_cover", statistic ="24_hour_mean"),
                   'Snow_Thickness_LWE_Mean': dict(variable="snow_thickness_lwe", statistic ="24_hour_mean"),
                   'Snow_Thickness_Mean': dict(variable="snow_thickness", statistic ="24_hour_mean"),
                   'Vapour_Pressure_Mean_24h': dict(variable="vapour_pressure", statistic ="24_hour_mean"),
@@ -62,7 +62,7 @@ def correct_statistic(name_with_dashes):
     :return: the correct filename
     """
     patterns = [("-Mean", "_Mean"), ("-Min", "_Min"), ("-Max", "_Max"), ("-06h", "_06h"), ("-09h", "_09h"),
-                ("-12h", "_12h"), ("-15h", "_15h"), ("-18h", "_18h")]
+                ("-12h", "_12h"), ("-15h", "_15h"), ("-18h", "_18h"), ("-Maximum_Temperature", "_Maximum_Temperature")]
     result = name_with_dashes
     for srch, repl in patterns:
         if srch in name_with_dashes:
