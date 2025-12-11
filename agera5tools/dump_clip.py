@@ -31,7 +31,8 @@ def dump(day, bbox, add_gridid=False):
             raise RuntimeError(msg)
 
     selected_variables = [varname for varname, selected in config.variables.items() if selected]
-    fnames = create_agera5_fnames(config.data_storage.netcdf_path, selected_variables, day)
+    fnames = create_agera5_fnames(config.data_storage.netcdf_path, selected_variables, day,
+                                  version=config.misc.agera5_version)
     ds = xr.open_mfdataset(fnames)
     ds = ds.sel(lon=slice(bbox.lon_min, bbox.lon_max), lat=slice(bbox.lat_max, bbox.lat_min))
 
@@ -61,7 +62,8 @@ def clip(day, bbox, add_gridid=False):
             raise RuntimeError(msg)
 
     selected_variables = [varname for varname, selected in config.variables.items() if selected]
-    fnames = create_agera5_fnames(config.data_storage.netcdf_path, selected_variables, day)
+    fnames = create_agera5_fnames(config.data_storage.netcdf_path, selected_variables, day,
+                                  version=config.misc.agera5_version)
     ds = xr.open_mfdataset(fnames)
     if add_gridid:
         ds = add_grid(ds)

@@ -51,32 +51,50 @@ variable_names = {'Temperature_Air_2m_Mean_24h': dict(variable="2m_temperature",
                   }
 
 
-def create_target_fname(meteo_variable_full_name, day, agera5_dir, stat="final", version="2.0"):
+def correct_statistic(name_with_dashes):
+    """This corrects the 'statistic' within the AgERA5 filename so it is exactly the same as on the CDS
+
+    E.g. it corrects : Temperature-Air-2m-Mean-24h_C3S-glob-agric_AgERA5_20250131_final-v2.0.0.nc
+                  to : Temperature-Air-2m_Mean-24h_C3S-glob-agric_AgERA5_20250131_final-v2.0.0.nc
+    (note the change from '-Mean-24h' to '_mean-24h'
+
+    :param name_with_dashes: the name of the variable from the agera5tools.yaml config file.
+    :return: the correct filename
+    """
+    patterns = [("-Mean", "_Mean"), ("-Min", "_Min"), ("-Max", "_Max"), ("-06h", "_06h"), ("-09h", "_09h"),
+                ("-12h", "_12h"), ("-15h", "_15h"), ("-18h", "_18h")]
+    result = name_with_dashes
+    for srch, repl in patterns:
+        if srch in name_with_dashes:
+            result = name_with_dashes.replace(srch, repl)
+            break
+    return result
+
+
+def create_target_fname(meteo_variable_full_name, day, agera5_dir, version="2.0"):
     """Creates the AgERA5 variable filename for given variable and day
 
     :param meteo_variable_full_name: the full name of the meteo variable
     :param day: the date of the file
     :param agera5_dir: the path to the AgERA5 dataset
-    :param stat: the path to the AgERA5 dataset
-    :param version: the path to the AgERA5 dataset
+    :param version:  AgERA5 dataset version
     :return: the full path to the target filename
     """
     name_with_dashes = meteo_variable_full_name.replace("_", "-")
+    name_corrected = correct_statistic(name_with_dashes)
     sday = day.strftime("%Y%m%d")
-    nc_fname = f"{name_with_dashes}_C3S-glob-agric_AgERA5_{sday}_{stat}-v{version}.0.nc"
+    nc_fname = f"{name_corrected}_C3S-glob-agric_AgERA5_{sday}_final-v{version}.0.nc"
     nc_fname = Path(agera5_dir) / str(day.year) / name_with_dashes / nc_fname
     return nc_fname
 
 
-def create_agera5_fnames(agera5_dir, var_names, day):
-    """returns the list of 22 AgERA5 variable filenames.
+def create_agera5_fnames(agera5_dir, var_names, day, version):
+    """returns the list of AgERA5 variable filenames for given var_names.
     """
     from . import config
     fnames = []
     for var_name in var_names:
-        fname = create_target_fname(var_name, day,
-                                    agera5_dir=config.data_storage.netcdf_path,
-                                    version=config.misc.agera5_version)
+        fname = create_target_fname(var_name, day, agera5_dir, version)
         if not fname.exists():
             msg = f"Cannot find file: {fname}"
             if CMD_MODE:
