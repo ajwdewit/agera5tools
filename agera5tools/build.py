@@ -339,7 +339,7 @@ def build(year_month=None, to_database=True, to_csv=False):
     for year, month in tqdm(build_years_months, desc="Downloading data"):
         if (year, month) not in selected_years_months:
             continue
-        logger.info(f"Starting AgERA5 download for {year}-{month:02}")
+        logger.info(f"Start building AgERA5 for {year}-{month:02}")
         potential_downloads = [(v, year, month) for v in selected_variables]
         actual_downloads = [inp for inp in potential_downloads if not nc_files_available(*inp)]
         if actual_downloads:

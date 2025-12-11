@@ -79,7 +79,7 @@ variables:
   Temperature_Air_2m_Min_Night_Time: no
   Cloud_Cover_Mean_24h: no
   Snow_Thickness_LWE_Mean_24h: no
-  Snow_Thickness_Mean_24h: no
+  Snow_Thickness_Mean_24h: yes
   Vapour_Pressure_Mean_24h: yes
   Precipitation_Flux: yes
   Solar_Radiation_Flux: yes
@@ -94,5 +94,5 @@ variables:
   Precipitation_Duration_Fraction: no
   Derived_Relative_Humidity_2m_Max: no
   Derived_Relative_Humidity_2m_Min: no
-  ReferenceET_PenmanMonteith_FAO56: yes
+  ReferenceET_PenmanMonteith_FAO56: no
   Vapour_Pressure_Deficit_at_Maximum_Temperature: no
