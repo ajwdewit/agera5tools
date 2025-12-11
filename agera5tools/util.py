@@ -61,7 +61,7 @@ def correct_statistic(name_with_dashes):
     :param name_with_dashes: the name of the variable from the agera5tools.yaml config file.
     :return: the correct filename
     """
-    patterns = [("-Mean", "_Mean"), ("-Min", "_Min"), ("-Max", "_Max"), ("-06h", "_06h"), ("-09h", "_09h"),
+    patterns = [("-Mean-", "_Mean-"), ("-Min-", "_Min-"), ("-Max-", "_Max-"), ("-06h", "_06h"), ("-09h", "_09h"),
                 ("-12h", "_12h"), ("-15h", "_15h"), ("-18h", "_18h")]
     result = name_with_dashes
     for srch, repl in patterns:
