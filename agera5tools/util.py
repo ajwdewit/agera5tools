@@ -62,7 +62,7 @@ def correct_statistic(name_with_dashes):
     :return: the correct filename
     """
     patterns = [("-Mean", "_Mean"), ("-Min", "_Min"), ("-Max", "_Max"), ("-06h", "_06h"), ("-09h", "_09h"),
-                ("-12h", "_12h"), ("-15h", "_15h"), ("-18h", "_18h"), ("-Maximum_Temperature", "_Maximum_Temperature")]
+                ("-12h", "_12h"), ("-15h", "_15h"), ("-18h", "_18h")]
     result = name_with_dashes
     for srch, repl in patterns:
         if srch in name_with_dashes:
