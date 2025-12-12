@@ -20,6 +20,7 @@ import sqlalchemy as sa
 import duckdb
 import xarray as xr
 from requests.exceptions import SSLError, HTTPError
+import click
 
 from .util import number_days_in_month, variable_names, create_target_fname, last_day_in_month, \
     add_grid, convert_to_celsius, chunker
@@ -355,6 +356,12 @@ def build(year_month=None, to_database=True, to_csv=False):
                 downloaded_ncfiles.extend(ncfiles)
         else:
             logger.info(f"Skipping download, NetCDF files already exist.")
+
+    if not to_csv and not to_database:
+        msg = "Loading of data is skipped: `agera5tools build` was executed without the --to_database or --to_csv options"
+        logger.info(msg)
+        click.echo(msg)
+        return
 
     for year, month in tqdm(build_years_months, desc="Loading into DB"):
         if (year, month) not in selected_years_months:
