@@ -92,7 +92,7 @@ variables:
   Precipitation_Rain_Duration_Fraction: no
   Precipitation_Solid_Duration_Fraction: no
   Precipitation_Duration_Fraction: no
-  Derived_Relative_Humidity_2m_Max: no
-  Derived_Relative_Humidity_2m_Min: no
+  Derived_Relative_Humidity_2m_Max_24h: no
+  Derived_Relative_Humidity_2m_Min_24h: no
   ReferenceET_PenmanMonteith_FAO56: no
   Vapour_Pressure_Deficit_at_Maximum_Temperature: no

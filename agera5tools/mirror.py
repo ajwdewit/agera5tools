@@ -14,7 +14,7 @@ import pandas as pd
 import sqlalchemy as sa
 from requests.exceptions import SSLError, HTTPError
 
-from .util import variable_names, get_grid
+from .util import variable_names, get_grid, create_target_fname
 from .build import unpack_cds_download, convert_ncfiles_to_dataframe, df_to_csv, df_to_database
 from . import config
 
@@ -109,6 +109,62 @@ def download_one_day(input):
     return dict(day=day, varname=agera5_variable_name, download_fname=download_fname, success=done)
 
 
+def download_missing_days(days, selected_variables):
+    """Download AgERA5 for given days and selected variables
+
+    :param days: a list of days
+    :param selected_variables: a list of selected AgERA5 variable names
+    :return: a tuple with the available NetCDF filenames and the days that failed to download
+    """
+
+    logger = logging.getLogger(__name__)
+    for day in tqdm(sorted(days), desc="Downloading data"):
+        logger.info(f"Starting AgERA5 download for {day}")
+        to_download = []
+        for varname in selected_variables:
+            nc_fname = create_target_fname(varname, day,
+                                           agera5_dir=config.data_storage.netcdf_path,
+                                           version=config.misc.agera5_version)
+            if not nc_fname.exists():
+                to_download.append((varname, day))
+
+        if not to_download:
+            # there is nothing to download for this day, all files exist
+            # this is mainly to ensure that the tqdm progress bar gets updated.
+            continue
+
+        logger.info(f"Starting concurrent CDS download of {len(to_download)} AgERA5 variables.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=config.cdsapi.concurrent_downloads) as executor:
+            downloaded_sets = executor.map(download_one_day, to_download)
+
+        downloaded_ncfiles = []
+        for dset in downloaded_sets:
+            if dset["success"] is False:
+                continue
+            ncfiles = unpack_cds_download(dset)
+            downloaded_ncfiles.extend(ncfiles)
+
+    # Finally collect all available ncfiles for all days
+    available_ncfiles_for_day = {}
+    for day in sorted(days):
+        available_ncfiles = []
+        for varname in selected_variables:
+            nc_fname = create_target_fname(varname, day,
+                                           agera5_dir=config.data_storage.netcdf_path,
+                                           version=config.misc.agera5_version)
+            if not nc_fname.exists():
+                available_ncfiles = None
+                break
+            else:
+                available_ncfiles.append(nc_fname)
+        if available_ncfiles:
+            available_ncfiles_for_day[day] = available_ncfiles
+
+    days_failed = set(days) - set(available_ncfiles_for_day.keys())
+
+    return available_ncfiles_for_day, days_failed
+
+
 def mirror(to_csv=True, dry_run=False):
     """mirrors the AgERA5tools database.
 
@@ -126,37 +182,21 @@ def mirror(to_csv=True, dry_run=False):
         logger.info(f"Found following days for updating AgERA5: {days}")
     else:
         logger.info(f"Found no days for updating AgERA5")
-    days_failed = set()
+        return days, set(), set()
 
     if dry_run:  # Do not actually start processing
-        return days, days_failed
+        return days, set(), set()
 
-    for day in tqdm(sorted(days), desc="Downloading data"):
-        logger.info(f"Starting AgERA5 download for {day}")
-        to_download = []
-        for varname in selected_variables:
-            to_download.append((varname, day))
+    available_ncfiles_for_day, days_failed_to_download = download_missing_days(days, selected_variables)
 
-        logger.info(f"Starting concurrent CDS download of {len(to_download)} AgERA5 variables.")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=config.cdsapi.concurrent_downloads) as executor:
-            downloaded_sets = executor.map(download_one_day, to_download)
+    days_failed_to_insert = set()
+    for day, ncfiles in tqdm(available_ncfiles_for_day.items(),  desc="Inserting data"):
 
-        downloaded_ncfiles = []
-        for dset in downloaded_sets:
-            if dset["success"] is False:
-                continue
-            ncfiles = unpack_cds_download(dset)
-            downloaded_ncfiles.extend(ncfiles)
-
-        if len(downloaded_ncfiles) != len(selected_variables):
-            days_failed.add(day)
-            continue
-
-        df = convert_ncfiles_to_dataframe(downloaded_ncfiles)
+        df = convert_ncfiles_to_dataframe(ncfiles)
 
         success = df_to_database(df, descriptor=day)
         if not success:
-            days_failed.add(day)
+            days_failed_to_insert.add(day)
 
         if to_csv:
             csv_fname = config.data_storage.csv_path / f"weather_grid_agera5_{day}.csv.gz"
@@ -164,9 +204,9 @@ def mirror(to_csv=True, dry_run=False):
 
         # Delete NetCDF files if required
         if config.data_storage.keep_netcdf is False:
-            [f.unlink() for f in downloaded_ncfiles]
+            [f.unlink() for f in available_ncfiles_for_day]
 
-    return days, days_failed
+    return days, days_failed_to_download, days_failed_to_insert
 
 
 if __name__ == "__main__":

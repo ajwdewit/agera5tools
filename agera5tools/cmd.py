@@ -204,8 +204,8 @@ def cmd_buildym(year, month, to_database, to_csv):
 def cmd_mirror(to_csv=False, dry_run=False):
     """Incrementally updates the AgERA5 database by daily downloads from the CDS.
     """
-    days, days_failed = mirror(to_csv, dry_run)
-    days_done = days.difference(days_failed)
+    days, days_failed_to_download, days_failed_to_insert = mirror(to_csv, dry_run)
+    days_done = days.difference(days_failed_to_insert)
     if not days:
         click.echo("Found no days to update the AgERA5 database for.")
     else:
@@ -216,8 +216,10 @@ def cmd_mirror(to_csv=False, dry_run=False):
             msg = "Mirror found the following:\n" \
                   f" - Days ({len(days)}) found for mirroring: {day_fmt(days)}\n" \
                   f" - Days ({len(days_done)}) successfully updated: {day_fmt(days_done)}\n"
-            if days_failed:
-                  msg += f" - Days ({len(days_failed)})  failed to update: {day_fmt(days_failed)}, see log for details\n"
+            if days_failed_to_download:
+                  msg += f" - Days ({len(days_failed_to_download)})  failed to download: {day_fmt(days_failed_to_download)}, see log for details\n"
+            if days_failed_to_insert:
+                msg += f" - Days ({len(days_failed_to_insert)})  failed to insert: {day_fmt(days_failed_to_insert)}, see log for details\n"
         click.echo(msg)
 
 
